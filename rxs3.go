@@ -43,7 +43,7 @@ func NewRxS3(dbPath string) *RxS3 {
 // BufferInput buffer db에 정보를 누적한다.
 func (rs *RxS3) BufferInput(input input.Input) {
 	var keyIndex int
-	out := input.Read()
+	out := input.Subscribe()
 
 	for {
 		select {
