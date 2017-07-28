@@ -1,6 +1,8 @@
 package input
 
 import (
+	"bytes"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -27,20 +29,26 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 	return us
 }
 
-// Read socket으로 데이터를 읽음
+// Subscribe socket으로 데이터를 읽음
 // channel을 반환한다.
-func (us *UnixSocket) Read() <-chan []byte {
+func (us *UnixSocket) Subscribe() <-chan []byte {
 	in := make(chan []byte, 1)
 
 	go func() {
 		for {
 			buff := make([]byte, 4096)
+
 			_, err := us.conn.Read(buff)
 			if err != nil {
+				if err == io.EOF {
+					_ = us.conn.Close()
+					return
+				}
+
 				log.Fatal(err)
 			}
 
-			in <- buff
+			in <- bytes.Trim(buff, "\x00")
 		}
 	}()
 

@@ -13,7 +13,7 @@ func TestRead(t *testing.T) {
 	ready := unixStreamServer()
 	<-ready
 	us := OpenUnixSocket("./test.sock")
-	out := us.Read()
+	out := us.Subscribe()
 
 	for {
 		data := <-out
@@ -27,7 +27,7 @@ func TestRead(t *testing.T) {
 	}
 }
 
-func echo(c net.Conn) {
+func echo(c net.Conn) bool {
 	var err error
 
 	for i := 0; i <= 5; i++ {
@@ -36,13 +36,15 @@ func echo(c net.Conn) {
 		if i == 5 {
 			_, err = c.Write([]byte("world"))
 			_ = c.Close()
-			return
+			return true
 		}
-		_, err = c.Write([]byte("hello!"))
+		_, err = c.Write([]byte("hello this byte stream test!"))
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
+
+	return false
 }
 
 func unixStreamServer() <-chan struct{} {
@@ -62,7 +64,10 @@ func unixStreamServer() <-chan struct{} {
 				log.Fatal(err)
 			}
 
-			go echo(fd)
+			if ok := echo(fd); ok {
+				_ = sock.Close()
+				return
+			}
 		}
 	}()
 
