@@ -14,12 +14,7 @@ import (
 // 읽은 데이터를 버퍼에 쓰는 객체
 type UnixSocket struct {
 	conn   net.Conn
-	stream *Streams
-}
-
-type Streams struct {
-	line chan []byte
-	done chan struct{}
+	stream *ByteStream
 }
 
 // OpenUnixSocket UnixSocket을 생성하고 소켓과 연결한다.
@@ -29,43 +24,37 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 		log.Fatal(err)
 	}
 
-	streams := &Streams{
-		Line:   make(chan []byte, 1),
-		Closed: make(chan struct{}, 1),
-	}
-
+	byteStream := NewByteStream()
 	us := &UnixSocket{
 		conn:   c,
-		stream: streams,
+		stream: byteStream,
 	}
 	go us.signalHandler()
 
 	return us
 }
 
-// Subscribe socket으로 데이터를 읽음
+// Publish socket으로 데이터를 읽음
 // channel을 반환한다.
-func (us *UnixSocket) Publish() *Streams {
-	go func() {
-		for {
-			buff := make([]byte, 4096)
+func (us *UnixSocket) Publish() *ByteStream {
+	us.stream.Observer.Handler.Observalble = func() {
+		buff := make([]byte, 1024)
 
-			_, err := us.conn.Read(buff)
-			if err != nil {
-				if err == io.EOF {
-					_ = us.conn.Close()
-					us.stream.closed <- struct{}{}
-					return
-				}
-
-				log.Fatal(err)
+		_, err := us.conn.Read(buff)
+		if err != nil {
+			if err == io.EOF {
+				_ = us.conn.Close()
+				us.stream.Observer.OnComplete()
+				return
 			}
 
-			us.stream.line <- bytes.Trim(buff, "\x00")
+			log.Fatal(err)
 		}
-	}()
 
-	return &us.stream
+		us.stream.Send(bytes.Trim(buff, "\x00"))
+	}
+
+	return us.stream.Publish()
 }
 
 func (us *UnixSocket) signalHandler() {
@@ -77,17 +66,4 @@ func (us *UnixSocket) signalHandler() {
 		log.Printf("capture signal: %s: Close unix socket", state)
 		_ = us.conn.Close()
 	}
-}
-
-func (s *Streams) Subscribe() <-chan []byte {
-	return s.line
-}
-
-func (s *Streams) Done() <-chan struct{} {
-	return s.done
-}
-
-// TODO 고루틴에 락을 걸어야됨
-func (s *Streams) Unsubscribe() {
-	close(s.line)
 }

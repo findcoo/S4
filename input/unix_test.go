@@ -12,11 +12,8 @@ func TestRead(t *testing.T) {
 	ready := test.UnixTestServer()
 	<-ready
 	us := OpenUnixSocket("./test.sock")
-	out := us.Subscribe()
 
-	for {
-		data := <-out
-
+	test1 := func(data []byte) {
 		if ok := bytes.Equal(data, []byte("world")); ok {
 			log.Print("end subscribe")
 			return
@@ -24,4 +21,7 @@ func TestRead(t *testing.T) {
 
 		log.Printf("subscribe data: %s ", string(data))
 	}
+
+	stream := us.Publish()
+	stream.Subscribe(test1)
 }
