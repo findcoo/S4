@@ -8,51 +8,59 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/findcoo/stream"
 )
 
-// UnixSocket 유닉스 소켓으로 부터 데이터를 읽고
-// 읽은 데이터를 버퍼에 쓰는 객체
+// UnixSocket read data from unix socket
 type UnixSocket struct {
 	conn   net.Conn
-	stream *ByteStream
+	stream *stream.BytesStream
 }
 
-// OpenUnixSocket UnixSocket을 생성하고 소켓과 연결한다.
+// OpenUnixSocket open unix socket
 func OpenUnixSocket(sockPath string) *UnixSocket {
 	c, err := net.Dial("unix", sockPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	byteStream := NewByteStream()
+	handler := stream.DefaultObservHandler()
+
+	bytesStream := stream.NewBytesStream(handler)
 	us := &UnixSocket{
 		conn:   c,
-		stream: byteStream,
+		stream: bytesStream,
 	}
 	go us.signalHandler()
 
 	return us
 }
 
-// Publish socket으로 데이터를 읽음
-// channel을 반환한다.
-func (us *UnixSocket) Publish() *ByteStream {
-	us.stream.Observer.Handler.Observalble = func() {
+// Publish start observer process and publish the stream read from unix socket
+func (us *UnixSocket) Publish() *stream.BytesStream {
+	us.stream.Observer.SetObservable(func() {
 		buff := make([]byte, 1024)
 
-		_, err := us.conn.Read(buff)
-		if err != nil {
-			if err == io.EOF {
-				_ = us.conn.Close()
-				us.stream.Observer.OnComplete()
-				return
+		for {
+			_, err := us.conn.Read(buff)
+			if err != nil {
+				if err == io.EOF {
+					_ = us.conn.Close()
+					us.stream.Observer.OnComplete()
+					return
+				}
+				log.Fatal(err)
 			}
 
-			log.Fatal(err)
+			select {
+			case <-us.stream.Observer.AfterCancel():
+				return
+			default:
+				us.stream.Send(bytes.Trim(buff, "\x00"))
+			}
 		}
-
-		us.stream.Send(bytes.Trim(buff, "\x00"))
-	}
+	})
 
 	return us.stream.Publish()
 }
