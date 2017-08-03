@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,8 +21,9 @@ var delim = []byte("[:delim:]")
 
 // RxS3 streaming data to AWS S3
 type RxS3 struct {
-	db *leveldb.DB
-	s3 *s3.S3
+	db    *leveldb.DB
+	s3    *s3.S3
+	mutex *sync.Mutex
 }
 
 // NewRxS3 RxS3 생성
@@ -43,8 +45,9 @@ func NewRxS3(dbPath string) *RxS3 {
 	}
 
 	rxs3 := &RxS3{
-		db: ldb,
-		s3: s3.New(sess),
+		db:    ldb,
+		s3:    s3.New(sess),
+		mutex: &sync.Mutex{},
 	}
 
 	return rxs3
@@ -67,22 +70,34 @@ func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
 func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() {
 	iter := rs.db.NewIterator(nil, nil)
 	bs := stream.NewBytesStream(stream.DefaultObservHandler())
+	corpus := []byte("")
+	ticker := time.NewTicker(interval)
+
+	flush := func() {
+		_ = rs.SendToS3(corpus)
+	}
+	bs.Observer.Handler.AtCancel = flush
+	bs.Observer.Handler.AtComplete = flush
 
 	bs.Observer.SetObservable(func() {
-		ticker := time.NewTicker(interval)
-
 		for {
+			iter = rs.db.NewIterator(nil, nil)
+
 			for iter.Next() {
 				select {
 				case <-bs.Observer.AfterCancel():
 					return
+				case <-ticker.C:
+					bs.Send(corpus)
+					corpus = []byte("")
 				default:
-					data := bytes.Join([][]byte{iter.Key(), iter.Value()}, delim)
-					bs.Send(data)
+					corpus = append(corpus, iter.Value()...)
+					if err := rs.db.Delete(iter.Key(), nil); err != nil {
+						log.Fatal(err)
+					}
 				}
 			}
 			iter.Release()
-			<-ticker.C
 		}
 	})
 
@@ -94,8 +109,8 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 func (rs *RxS3) SendToS3(data []byte) error {
 	obj := &s3.PutObjectInput{
 		Body:   aws.ReadSeekCloser(bytes.NewReader(data)),
-		Bucket: aws.String("quicket-log-house"),
-		Key:    aws.String("suricata/test"),
+		Bucket: aws.String(""),
+		Key:    aws.String(""),
 	}
 
 	_, err := rs.s3.PutObject(obj)
@@ -121,24 +136,9 @@ func (rs *RxS3) Aggregate(sockPath string) (cancelUnix func(), cancelS3 func()) 
 			}
 		}()
 
-		splited := bytes.Split(data, delim)
-		if len(splited) != 2 {
-			log.Print("Invalid data, isn`t there delimeter?")
-			if err := rs.db.Delete(splited[0], nil); err != nil {
-				log.Fatal(err)
-			}
-			return
-		}
-
-		key, value := splited[0], splited[1]
-
-		err := rs.SendToS3(value)
+		err := rs.SendToS3(data)
 		if err != nil {
 			log.Panic(err)
-		}
-
-		if err := rs.db.Delete(key, nil); err != nil {
-			log.Fatal(err)
 		}
 	}, time.Minute*2)
 
