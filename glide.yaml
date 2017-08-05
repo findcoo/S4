@@ -1,0 +1,15 @@
+package: github.com/findcoo/rxs3
+import:
+- package: github.com/aws/aws-sdk-go
+  version: ~1.10.20
+  subpackages:
+  - aws
+  - aws/session
+  - service/s3
+- package: github.com/findcoo/stream
+  version: ~1.0.0
+- package: github.com/syndtr/goleveldb
+  subpackages:
+  - leveldb
+  - leveldb/filter
+  - leveldb/opt

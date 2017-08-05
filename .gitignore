@@ -1,1 +1,4 @@
 test.db
+vendor
+*lock*
+*.swp

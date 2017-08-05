@@ -17,17 +17,26 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-var delim = []byte("[:delim:]")
+// Config AWS S3 configurations
+type Config struct {
+	AWSRegion string
+	//AWSAccessKey string
+	//AWSSecretKey string
+	S3Bucket          string
+	S3Key             string
+	FlushIntervalTime time.Duration
+}
 
 // RxS3 streaming data to AWS S3
 type RxS3 struct {
-	db    *leveldb.DB
-	s3    *s3.S3
-	mutex *sync.Mutex
+	db     *leveldb.DB
+	s3     *s3.S3
+	config *Config
+	mutex  *sync.Mutex
 }
 
 // NewRxS3 RxS3 생성
-func NewRxS3(dbPath string) *RxS3 {
+func NewRxS3(dbPath string, config *Config) *RxS3 {
 	options := &opt.Options{
 		Filter: filter.NewBloomFilter(10),
 	}
@@ -38,16 +47,17 @@ func NewRxS3(dbPath string) *RxS3 {
 	}
 
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("ap-northeast-2"),
+		Region: aws.String(config.AWSRegion),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	rxs3 := &RxS3{
-		db:    ldb,
-		s3:    s3.New(sess),
-		mutex: &sync.Mutex{},
+		db:     ldb,
+		s3:     s3.New(sess),
+		config: config,
+		mutex:  &sync.Mutex{},
 	}
 
 	return rxs3
@@ -88,13 +98,17 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 				case <-bs.Observer.AfterCancel():
 					return
 				case <-ticker.C:
+					rs.mutex.Lock()
 					bs.Send(corpus)
 					corpus = []byte("")
+					rs.mutex.Unlock()
 				default:
+					rs.mutex.Lock()
 					corpus = append(corpus, iter.Value()...)
 					if err := rs.db.Delete(iter.Key(), nil); err != nil {
 						log.Fatal(err)
 					}
+					rs.mutex.Unlock()
 				}
 			}
 			iter.Release()
@@ -109,8 +123,8 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 func (rs *RxS3) SendToS3(data []byte) error {
 	obj := &s3.PutObjectInput{
 		Body:   aws.ReadSeekCloser(bytes.NewReader(data)),
-		Bucket: aws.String(""),
-		Key:    aws.String(""),
+		Bucket: aws.String(rs.config.S3Bucket),
+		Key:    aws.String(rs.config.S3Key),
 	}
 
 	_, err := rs.s3.PutObject(obj)
@@ -140,7 +154,7 @@ func (rs *RxS3) Aggregate(sockPath string) (cancelUnix func(), cancelS3 func()) 
 		if err != nil {
 			log.Panic(err)
 		}
-	}, time.Minute*2)
+	}, rs.config.FlushIntervalTime)
 
 	cancelUnix = unixStream.Cancel
 	cancelS3 = cancelConsume

@@ -26,17 +26,38 @@ func TestWriteBuffer(t *testing.T) {
 }
 
 func TestConsumeBuffer(t *testing.T) {
-	rs := NewRxS3("./test.db")
+	rs := NewRxS3("./test.db", nil)
 
-	rs.ConsumeBuffer(func(data []byte) {
+	var count int
+	cancel := rs.ConsumeBuffer(func(data []byte) {
 		t.Logf("consumed data: %s", data)
-	}, time.Second*30)
+		count++
+	}, time.Second*1)
+
+	for count > 0 {
+		cancel()
+	}
 }
 
 func TestSendToS3(t *testing.T) {
-	rs := NewRxS3("./test.db")
+	rs := NewRxS3("./test.db", &Config{
+		AWSRegion: "ap-northeast-2",
+		S3Bucket:  "test.rxs3",
+		S3Key:     "word",
+	})
 	if err := rs.SendToS3([]byte("hello s3")); err != nil {
 		t.Log(err)
 		t.Fail()
 	}
+}
+
+func TestAggregate(t *testing.T) {
+	rs := NewRxS3("./test.db", &Config{
+		AWSRegion: "ap-northeast-2",
+		S3Bucket:  "test.rxs3",
+		S3Key:     "corpus",
+	})
+
+	cancelUnix, cancelS3 = rs.Aggregate("./test.sock")
+
 }
