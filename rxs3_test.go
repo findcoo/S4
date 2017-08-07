@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 func TestWriteBuffer(t *testing.T) {
 	_ = os.Remove("./test.db")
-	rs := NewRxS3("./test.db")
+	rs := NewRxS3("./test.db", nil)
 
 	<-test.UnixTestServer()
 
@@ -26,11 +27,12 @@ func TestWriteBuffer(t *testing.T) {
 }
 
 func TestConsumeBuffer(t *testing.T) {
+	t.Parallel()
 	rs := NewRxS3("./test.db", nil)
 
 	var count int
 	cancel := rs.ConsumeBuffer(func(data []byte) {
-		t.Logf("consumed data: %s", data)
+		log.Printf("consumed data: %s", data)
 		count++
 	}, time.Second*1)
 
@@ -58,6 +60,5 @@ func TestAggregate(t *testing.T) {
 		S3Key:     "corpus",
 	})
 
-	cancelUnix, cancelS3 = rs.Aggregate("./test.sock")
-
+	rs.Aggregate("./test.sock")
 }

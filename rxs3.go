@@ -17,6 +17,14 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
+// DefaultConfig default rxs3 config
+var DefaultConfig = &Config{
+	AWSRegion:         "",
+	S3Bucket:          "",
+	S3Key:             "",
+	FlushIntervalTime: time.Minute * 2,
+}
+
 // Config AWS S3 configurations
 type Config struct {
 	AWSRegion string
@@ -37,6 +45,10 @@ type RxS3 struct {
 
 // NewRxS3 RxS3 생성
 func NewRxS3(dbPath string, config *Config) *RxS3 {
+	if config == nil {
+		config = DefaultConfig
+	}
+
 	options := &opt.Options{
 		Filter: filter.NewBloomFilter(10),
 	}
@@ -79,17 +91,18 @@ func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
 // ConsumeBuffer consume all data from leveldb, data will be deleted
 func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() {
 	iter := rs.db.NewIterator(nil, nil)
-	bs := stream.NewBytesStream(stream.DefaultObservHandler())
+	obv := stream.NewObserver(stream.DefaultObservHandler())
+	bs := stream.NewBytesStream(obv)
 	corpus := []byte("")
 	ticker := time.NewTicker(interval)
 
 	flush := func() {
 		_ = rs.SendToS3(corpus)
 	}
-	bs.Observer.Handler.AtCancel = flush
-	bs.Observer.Handler.AtComplete = flush
+	bs.Handler.AtCancel = flush
+	bs.Handler.AtComplete = flush
 
-	bs.Observer.SetObservable(func() {
+	bs.Observable = func() {
 		for {
 			iter = rs.db.NewIterator(nil, nil)
 
@@ -113,9 +126,9 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 			}
 			iter.Release()
 		}
-	})
+	}
 
-	go bs.Publish().Subscribe(call)
+	go bs.Publish(nil).Subscribe(call)
 	return bs.Cancel
 }
 

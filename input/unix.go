@@ -25,9 +25,8 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 		log.Fatal(err)
 	}
 
-	handler := stream.DefaultObservHandler()
-
-	bytesStream := stream.NewBytesStream(handler)
+	obv := stream.NewObserver(stream.DefaultObservHandler())
+	bytesStream := stream.NewBytesStream(obv)
 	us := &UnixSocket{
 		conn:   c,
 		stream: bytesStream,
@@ -39,7 +38,7 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 
 // Publish start observer process and publish the stream read from unix socket
 func (us *UnixSocket) Publish() *stream.BytesStream {
-	us.stream.Observer.SetObservable(func() {
+	us.stream.Observable = func() {
 		buff := make([]byte, 1024)
 
 		for {
@@ -60,9 +59,9 @@ func (us *UnixSocket) Publish() *stream.BytesStream {
 				us.stream.Send(bytes.Trim(buff, "\x00"))
 			}
 		}
-	})
+	}
 
-	return us.stream.Publish()
+	return us.stream.Publish(nil)
 }
 
 func (us *UnixSocket) signalHandler() {
