@@ -14,8 +14,8 @@ import (
 
 // UnixSocket read data from unix socket
 type UnixSocket struct {
-	conn   net.Conn
-	stream *stream.BytesStream
+	conn net.Conn
+	*stream.BytesStream
 }
 
 // OpenUnixSocket open unix socket
@@ -28,8 +28,8 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 	obv := stream.NewObserver(stream.DefaultObservHandler())
 	bytesStream := stream.NewBytesStream(obv)
 	us := &UnixSocket{
-		conn:   c,
-		stream: bytesStream,
+		conn:        c,
+		BytesStream: bytesStream,
 	}
 	go us.signalHandler()
 
@@ -37,8 +37,8 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 }
 
 // Publish start observer process and publish the stream read from unix socket
-func (us *UnixSocket) Publish() *stream.BytesStream {
-	us.stream.Target = func() {
+func (us *UnixSocket) Publish() *UnixSocket {
+	us.Target = func() {
 		buff := make([]byte, 1024)
 
 		for {
@@ -46,22 +46,23 @@ func (us *UnixSocket) Publish() *stream.BytesStream {
 			if err != nil {
 				if err == io.EOF {
 					_ = us.conn.Close()
-					us.stream.Observer.OnComplete()
+					us.OnComplete()
 					return
 				}
 				log.Fatal(err)
 			}
 
 			select {
-			case <-us.stream.Observer.AfterCancel():
+			case <-us.AfterCancel():
 				return
 			default:
-				us.stream.Send(bytes.Trim(buff, "\x00"))
+				us.Send(bytes.Trim(buff, "\x00"))
 			}
 		}
 	}
+	us.Watch(nil)
 
-	return us.stream.Publish(nil)
+	return us
 }
 
 func (us *UnixSocket) signalHandler() {

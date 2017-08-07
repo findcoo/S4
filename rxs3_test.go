@@ -10,10 +10,23 @@ import (
 	"github.com/findcoo/rxs3/test"
 )
 
+var rs = NewRxS3("./test.db", &Config{
+	AWSRegion: "ap-northeast-2",
+	S3Bucket:  "test.quicket.rxs3",
+	S3Key:     "word",
+})
+
+func TestSendToS3(t *testing.T) {
+	rs.config.S3Key = "word"
+
+	if err := rs.SendToS3([]byte("hello s3")); err != nil {
+		t.Log(err)
+		t.Fail()
+	}
+}
+
 func TestWriteBuffer(t *testing.T) {
 	_ = os.Remove("./test.db")
-	rs := NewRxS3("./test.db", nil)
-
 	<-test.UnixTestServer()
 
 	var keyIndex int64
@@ -26,39 +39,32 @@ func TestWriteBuffer(t *testing.T) {
 	})
 }
 
-func TestConsumeBuffer(t *testing.T) {
-	t.Parallel()
-	rs := NewRxS3("./test.db", nil)
+func TestBufferProducer(t *testing.T) {
+	<-test.UnixTestServer()
 
+	us := rs.BufferProducer("./test.sock")
+
+	<-time.After(time.Second * 2)
+	us.Cancel()
+}
+
+func TestReadBuffer(t *testing.T) {
+	iter := rs.db.NewIterator(nil, nil)
+	for iter.Next() {
+		t.Log(iter.Key())
+		t.Log(iter.Value())
+	}
+}
+
+func TestBufferConsumer(t *testing.T) {
 	var count int
-	cancel := rs.ConsumeBuffer(func(data []byte) {
-		log.Printf("consumed data: %s", data)
+	buffer := rs.BufferConsumer(time.Second * 1)
+
+	buffer.Subscribe(func(data []byte) {
+		if count > 2 {
+			buffer.Cancel()
+		}
+		log.Print(data)
 		count++
-	}, time.Second*1)
-
-	for count > 0 {
-		cancel()
-	}
-}
-
-func TestSendToS3(t *testing.T) {
-	rs := NewRxS3("./test.db", &Config{
-		AWSRegion: "ap-northeast-2",
-		S3Bucket:  "test.rxs3",
-		S3Key:     "word",
 	})
-	if err := rs.SendToS3([]byte("hello s3")); err != nil {
-		t.Log(err)
-		t.Fail()
-	}
-}
-
-func TestAggregate(t *testing.T) {
-	rs := NewRxS3("./test.db", &Config{
-		AWSRegion: "ap-northeast-2",
-		S3Bucket:  "test.rxs3",
-		S3Key:     "corpus",
-	})
-
-	rs.Aggregate("./test.sock")
 }

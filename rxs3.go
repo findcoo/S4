@@ -88,13 +88,12 @@ func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
 	}
 }
 
-// ConsumeBuffer consume all data from leveldb, data will be deleted
-func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() {
-	iter := rs.db.NewIterator(nil, nil)
-	obv := stream.NewObserver(stream.DefaultObservHandler())
-	bs := stream.NewBytesStream(obv)
-	corpus := []byte("")
+// BufferConsumer consume all data from leveldb, data will be deleted
+func (rs *RxS3) BufferConsumer(interval time.Duration) *stream.BytesStream {
+	bs := stream.NewBytesStream(stream.NewObserver(nil))
 	ticker := time.NewTicker(interval)
+	iter := rs.db.NewIterator(nil, nil)
+	corpus := []byte("")
 
 	flush := func() {
 		_ = rs.SendToS3(corpus)
@@ -103,33 +102,28 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 	bs.Handler.AtComplete = flush
 
 	bs.Target = func() {
+	PubLoop:
 		for {
 			iter = rs.db.NewIterator(nil, nil)
-
-			for iter.Next() {
-				select {
-				case <-bs.Observer.AfterCancel():
-					return
-				case <-ticker.C:
-					rs.mutex.Lock()
-					bs.Send(corpus)
-					corpus = []byte("")
-					rs.mutex.Unlock()
-				default:
-					rs.mutex.Lock()
+			select {
+			case <-bs.AfterCancel():
+				break PubLoop
+			case <-ticker.C:
+				bs.Send(corpus)
+				corpus = []byte("")
+			default:
+				for iter.Next() {
 					corpus = append(corpus, iter.Value()...)
 					if err := rs.db.Delete(iter.Key(), nil); err != nil {
 						log.Fatal(err)
 					}
-					rs.mutex.Unlock()
 				}
 			}
 			iter.Release()
 		}
 	}
 
-	go bs.Publish(nil).Subscribe(call)
-	return bs.Cancel
+	return bs.Publish(nil)
 }
 
 // SendToS3 send data to s3 bucket
@@ -144,32 +138,15 @@ func (rs *RxS3) SendToS3(data []byte) error {
 	return err
 }
 
-// Aggregate aggregate log between unix socket and s3
-// NOTE first return value cancel read from unix socket, second return value cancel aggregate to s3
-func (rs *RxS3) Aggregate(sockPath string) (cancelUnix func(), cancelS3 func()) {
+// BufferProducer read from unix socket and write to leveldb
+func (rs *RxS3) BufferProducer(sockPath string) *input.UnixSocket {
 	var keyIndex int64
 	us := input.OpenUnixSocket(sockPath)
-	unixStream := us.Publish()
 
-	go unixStream.Subscribe(func(data []byte) {
+	go us.Publish().Subscribe(func(data []byte) {
 		rs.WriteBuffer(keyIndex, data)
 		keyIndex++
 	})
 
-	cancelConsume := rs.ConsumeBuffer(func(data []byte) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Print(r)
-			}
-		}()
-
-		err := rs.SendToS3(data)
-		if err != nil {
-			log.Panic(err)
-		}
-	}, rs.config.FlushIntervalTime)
-
-	cancelUnix = unixStream.Cancel
-	cancelS3 = cancelConsume
-	return
+	return us
 }
