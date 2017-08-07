@@ -102,7 +102,7 @@ func (rs *RxS3) ConsumeBuffer(call func([]byte), interval time.Duration) func() 
 	bs.Handler.AtCancel = flush
 	bs.Handler.AtComplete = flush
 
-	bs.Observable = func() {
+	bs.Target = func() {
 		for {
 			iter = rs.db.NewIterator(nil, nil)
 

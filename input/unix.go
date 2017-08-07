@@ -38,7 +38,7 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 
 // Publish start observer process and publish the stream read from unix socket
 func (us *UnixSocket) Publish() *stream.BytesStream {
-	us.stream.Observable = func() {
+	us.stream.Target = func() {
 		buff := make([]byte, 1024)
 
 		for {
