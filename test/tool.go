@@ -1,9 +1,12 @@
 package test
 
 import (
+	"encoding/binary"
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -53,4 +56,43 @@ func UnixTestServer() <-chan struct{} {
 	}()
 
 	return ready
+}
+
+// MockUnixEchoServer unix socket mocking server
+func MockUnixEchoServer(timeout time.Duration) {
+	sock, err := net.Listen("unix", "./mock.sock")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var count uint32
+	ticker := time.NewTicker(time.Second * 1)
+	buff := make([]byte, 4)
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
+	go func() {
+		deadSign := <-sig
+		sock.Close()
+		log.Fatal(deadSign)
+	}()
+
+	fd, err := sock.Accept()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		select {
+		case <-time.After(timeout):
+			_ = fd.Close()
+			_ = sock.Close()
+			return
+		case <-ticker.C:
+			binary.LittleEndian.PutUint32(buff, count)
+			_, err = fd.Write(buff)
+			if err != nil {
+				log.Print(err)
+			}
+			count++
+		}
+	}
 }

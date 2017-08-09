@@ -11,9 +11,10 @@ import (
 )
 
 var rs = NewRxS3("./test.db", &Config{
-	AWSRegion: "ap-northeast-2",
-	S3Bucket:  "test.quicket.rxs3",
-	S3Key:     "word",
+	AWSRegion:         "ap-northeast-2",
+	S3Bucket:          "test.quicket.rxs3",
+	S3Key:             "word",
+	FlushIntervalTime: time.Second * 1,
 })
 
 func TestSendToS3(t *testing.T) {
@@ -58,7 +59,7 @@ func TestReadBuffer(t *testing.T) {
 
 func TestBufferConsumer(t *testing.T) {
 	var count int
-	buffer := rs.BufferConsumer(time.Second * 1)
+	buffer := rs.BufferConsumer()
 
 	buffer.Subscribe(func(data []byte) {
 		if count > 2 {

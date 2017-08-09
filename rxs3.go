@@ -89,9 +89,9 @@ func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
 }
 
 // BufferConsumer consume all data from leveldb, data will be deleted
-func (rs *RxS3) BufferConsumer(interval time.Duration) *stream.BytesStream {
+func (rs *RxS3) BufferConsumer() *stream.BytesStream {
 	bs := stream.NewBytesStream(stream.NewObserver(nil))
-	ticker := time.NewTicker(interval)
+	ticker := time.NewTicker(rs.config.FlushIntervalTime)
 	iter := rs.db.NewIterator(nil, nil)
 	corpus := []byte("")
 
