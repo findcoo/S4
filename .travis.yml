@@ -1,18 +1,17 @@
 language: go
 go:
-- 1.8.x
+ - 1.8.x
 services:
-- docker
+ - docker
 env:
-- TRAVIS_GO_VERSION=1.8.3
+ - TRAVIS_GO_VERSION=1.8.3
+ - secure: rgA8BomMtTG0heIesrA4TJmztL6ywCkCgsa0evmBJMSMOF4MMfDxaeLHb9fj+V8egdyBaDMtvDhU82DzUzLMp9SQFOGbCKTUD/q2gTQGVsdnGAQe1kyZlK4yyblkMG6hvYmFsvWXUIOUVAtR6jetbdr9zeVL4KV9O/Y5+VnP/tN1zIKM0P+bWUgvl0Jfr1JQLW7WooQdv47v2tihqPOduScnGEcKuz9NCQNKgu8c4ElTBGWMb97wRPb067uPmFYp1uV1ya6e/c+jbi2CUq2XSsddgrzq+vJ1IDkqk9c79+3NT3NeQmPCWfF1PUaQnvAyaw0RC9ttXChL7qkL/vn/a1g4FjPzbSiLvZGm4MciOPZmyBZOukthWdLsA8iB9IOzTwbqeBkM/CU9hEvXExU+5Z7PF4y9JuDlkfG3l3SraGpvwORqIXos22MmelTTnfhwn+Gb8OvJfaKN0adymfaWqytmhohJSktrCxFYswoE60r5NZaxllfgah0z73D5P89Hl0JZBqUzu5sVJnOe76NrbkO38iUMbSg9n780oYsMX6418fhy1rHEARZVnXYPUzknPp7b0Jz8fSvKg7vdQmme1InxXgUmiaErBbwt831fE4YW2TLyvKv1p1adWefAqJ9M4nFI5mQ/n1PXVjgn6Reu705W7+ca+/nfKv6yj1HgAvw=
 cache:
   directories:
-  - $TRAVIS_BUILD_DIR/vendor
+   - $TRAVIS_BUILD_DIR/vendor
 before_install:
-- curl https://glide.sh/get | sh
+ - curl https://glide.sh/get | sh
 install: make install
 script:
-- make test
-- go build
-dd:
-  secure: rgA8BomMtTG0heIesrA4TJmztL6ywCkCgsa0evmBJMSMOF4MMfDxaeLHb9fj+V8egdyBaDMtvDhU82DzUzLMp9SQFOGbCKTUD/q2gTQGVsdnGAQe1kyZlK4yyblkMG6hvYmFsvWXUIOUVAtR6jetbdr9zeVL4KV9O/Y5+VnP/tN1zIKM0P+bWUgvl0Jfr1JQLW7WooQdv47v2tihqPOduScnGEcKuz9NCQNKgu8c4ElTBGWMb97wRPb067uPmFYp1uV1ya6e/c+jbi2CUq2XSsddgrzq+vJ1IDkqk9c79+3NT3NeQmPCWfF1PUaQnvAyaw0RC9ttXChL7qkL/vn/a1g4FjPzbSiLvZGm4MciOPZmyBZOukthWdLsA8iB9IOzTwbqeBkM/CU9hEvXExU+5Z7PF4y9JuDlkfG3l3SraGpvwORqIXos22MmelTTnfhwn+Gb8OvJfaKN0adymfaWqytmhohJSktrCxFYswoE60r5NZaxllfgah0z73D5P89Hl0JZBqUzu5sVJnOe76NrbkO38iUMbSg9n780oYsMX6418fhy1rHEARZVnXYPUzknPp7b0Jz8fSvKg7vdQmme1InxXgUmiaErBbwt831fE4YW2TLyvKv1p1adWefAqJ9M4nFI5mQ/n1PXVjgn6Reu705W7+ca+/nfKv6yj1HgAvw=
+ - make test
+ - go build
