@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/findcoo/rxs3/test"
+	"github.com/findcoo/S4/test"
 	"github.com/urfave/cli"
 )
 
@@ -70,7 +70,7 @@ func s4Handler(c *cli.Context) error {
 		S3Key:             key,
 		FlushIntervalTime: flush,
 	}
-	s4 := NewRxS3(bufferPath, config)
+	s4 := NewS4(bufferPath, config)
 	s4.BufferProducer(socketPath)
 	s4.BufferConsumer().Subscribe(func(data []byte) {
 		if err := s4.SendToS3(data); err != nil {
@@ -87,7 +87,7 @@ func mockingTest(c *cli.Context) error {
 		FlushIntervalTime: time.Second * 1,
 	}
 
-	s4 := NewRxS3("./mock.db", config)
+	s4 := NewS4("./mock.db", config)
 	s4.BufferProducer("./mock.sock")
 	deadline := time.After(time.Second * 10)
 	buffer := s4.BufferConsumer()

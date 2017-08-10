@@ -1,4 +1,4 @@
-package: github.com/findcoo/rxs3
+package: github.com/findcoo/S4
 import:
 - package: github.com/aws/aws-sdk-go
   version: ~1.10.20

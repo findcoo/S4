@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/findcoo/rxs3/input"
+	"github.com/findcoo/S4/input"
 	"github.com/findcoo/stream"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -44,8 +44,8 @@ type S4 struct {
 	mutex  *sync.Mutex
 }
 
-// NewRxS3 RxS3 생성
-func NewRxS3(dbPath string, config *S4Config) *S4 {
+// NewS4 RxS3 생성
+func NewS4(dbPath string, config *S4Config) *S4 {
 	if config == nil {
 		config = DefaultConfig
 	}

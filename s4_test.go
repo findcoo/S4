@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/findcoo/rxs3/input"
-	"github.com/findcoo/rxs3/test"
+	"github.com/findcoo/S4/input"
+	"github.com/findcoo/S4/test"
 )
 
-var rs = NewRxS3("./test.db", &S4Config{
+var rs = NewS4("./test.db", &S4Config{
 	AWSRegion:         "ap-northeast-2",
 	S3Bucket:          "test.rxs3",
 	S3Key:             "word",
@@ -58,14 +58,10 @@ func TestReadBuffer(t *testing.T) {
 }
 
 func TestBufferConsumer(t *testing.T) {
-	var count int
 	buffer := rs.BufferConsumer()
 
 	buffer.Subscribe(func(data []byte) {
-		if count > 2 {
-			buffer.Cancel()
-		}
 		log.Print(data)
-		count++
+		buffer.Cancel()
 	})
 }

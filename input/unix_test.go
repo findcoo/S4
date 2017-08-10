@@ -5,7 +5,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/findcoo/rxs3/test"
+	"github.com/findcoo/S4/test"
 )
 
 func TestRead(t *testing.T) {
