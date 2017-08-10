@@ -3,6 +3,8 @@ go:
 - 1.8.x
 services:
 - docker
+env:
+ - TRAVIS_GO_VERSION=1.8.3
 cache:
   directories:
   - $TRAVIS_BUILD_DIR/vendor

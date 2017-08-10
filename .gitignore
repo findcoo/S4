@@ -3,5 +3,4 @@ buffer.db
 mock.db
 test.sock
 vendor
-*lock*
 *.swp
