@@ -12,7 +12,7 @@ import (
 
 var rs = NewS4("./test.db", &S4Config{
 	AWSRegion:         "ap-northeast-2",
-	S3Bucket:          "test.rxs3",
+	S3Bucket:          "test.s4",
 	S3Key:             "word",
 	FlushIntervalTime: time.Second * 1,
 })
