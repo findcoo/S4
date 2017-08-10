@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/findcoo/rxs3/test"
@@ -18,6 +19,37 @@ var (
 	ErrS3PathRequired = errors.New("-s, --s3Path option required")
 	// ErrS3RegionRequired require s3 region name
 	ErrS3RegionRequired = errors.New("-r, --region option required")
+	s3ConfigFlag        = []cli.Flag{
+		cli.StringFlag{
+			Name:   "s3Path, s",
+			Usage:  "s3 path",
+			EnvVar: "S4_S3_PATH",
+		},
+		cli.StringFlag{
+			Name:   "region, r",
+			Usage:  "aws s3 region",
+			EnvVar: "S4_REGION",
+		},
+	}
+	bufferConfigFlag = []cli.Flag{
+		cli.StringFlag{
+			Name:   "buffer, b",
+			Value:  "./buffer.db",
+			Usage:  "buffer database path",
+			EnvVar: "S4_BUFFER_PATH",
+		},
+		cli.StringFlag{
+			Name:   "unix, u",
+			Usage:  "unix file socket path",
+			EnvVar: "S4_SOCKET_PATH",
+		},
+		cli.DurationFlag{
+			Name:   "flush, f",
+			Value:  time.Minute * 5,
+			Usage:  "flush time interval",
+			EnvVar: "S4_FLUSH_TIME",
+		},
+	}
 )
 
 func s4Handler(c *cli.Context) error {
@@ -30,6 +62,7 @@ func s4Handler(c *cli.Context) error {
 	region := c.String("region")
 	flush := c.Duration("flush")
 	bucket, key := path.Split(s3Path)
+	bucket = strings.TrimRight(bucket, "/")
 
 	config := &Config{
 		AWSRegion:         region,
@@ -39,7 +72,33 @@ func s4Handler(c *cli.Context) error {
 	}
 	s4 := NewRxS3(bufferPath, config)
 	s4.BufferProducer(socketPath)
-	s4.BufferConsumer()
+	s4.BufferConsumer().Subscribe(func(data []byte) {
+		if err := s4.SendToS3(data); err != nil {
+			log.Print(err)
+		}
+	})
+	return nil
+}
+
+func mockingTest(c *cli.Context) error {
+	go test.MockUnixEchoServer(time.Second * 10)
+
+	config := &Config{
+		FlushIntervalTime: time.Second * 1,
+	}
+
+	s4 := NewRxS3("./mock.db", config)
+	s4.BufferProducer("./mock.sock")
+	deadline := time.After(time.Second * 10)
+	buffer := s4.BufferConsumer()
+	buffer.Subscribe(func(data []byte) {
+		select {
+		case <-deadline:
+			buffer.Cancel()
+		default:
+			log.Print(data)
+		}
+	})
 	return nil
 }
 
@@ -47,45 +106,13 @@ func s4Handler(c *cli.Context) error {
 func NewApp() *cli.App {
 	app := cli.NewApp()
 
-	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:   "buffer, b",
-			Value:  "./buffer.db",
-			Usage:  "buffer database path, default: ./buffer.db",
-			EnvVar: "S4_BUFFER_PATH",
-		},
-		cli.StringFlag{
-			Name:   "unix, u",
-			Usage:  "unix file socket path",
-			EnvVar: "S4_SOCKET_PATH",
-		},
-		cli.StringFlag{
-			Name:   "s3Path, s",
-			Usage:  "s3 path",
-			EnvVar: "S4_S3_PATH",
-		},
-		cli.StringFlag{
-			Name:   "region, r",
-			Usage:  "aws s3 region",
-			EnvVar: "S4_REGION",
-		},
-		cli.DurationFlag{
-			Name:   "flush, f",
-			Value:  time.Minute * 5,
-			Usage:  "flush time interval, example formats (5m, 5h24m, 5s)",
-			EnvVar: "S4_FLUSH_TIME",
-		},
-	}
-
+	app.Flags = append(s3ConfigFlag, bufferConfigFlag...)
 	app.Commands = []cli.Command{
 		{
 			Name:    "mock",
 			Aliases: []string{"m"},
 			Usage:   "running mock unix socket server",
-			Action: func(c *cli.Context) error {
-				test.MockUnixEchoServer(time.Second * 20)
-				return nil
-			},
+			Action:  mockingTest,
 		},
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -93,7 +94,7 @@ func (rs *RxS3) BufferConsumer() *stream.BytesStream {
 	bs := stream.NewBytesStream(stream.NewObserver(nil))
 	ticker := time.NewTicker(rs.config.FlushIntervalTime)
 	iter := rs.db.NewIterator(nil, nil)
-	corpus := []byte("")
+	var corpus []byte
 
 	flush := func() {
 		_ = rs.SendToS3(corpus)
@@ -109,8 +110,10 @@ func (rs *RxS3) BufferConsumer() *stream.BytesStream {
 			case <-bs.AfterCancel():
 				break PubLoop
 			case <-ticker.C:
-				bs.Send(corpus)
-				corpus = []byte("")
+				if corpus != nil {
+					bs.Send(corpus)
+					corpus = nil
+				}
 			default:
 				for iter.Next() {
 					corpus = append(corpus, iter.Value()...)
@@ -128,10 +131,13 @@ func (rs *RxS3) BufferConsumer() *stream.BytesStream {
 
 // SendToS3 send data to s3 bucket
 func (rs *RxS3) SendToS3(data []byte) error {
+	now := time.Now()
+	key := rs.config.S3Key
+	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%d%d", key, now.Year(), int(now.Month()), now.Day(), now.Hour(), now.Minute())
 	obj := &s3.PutObjectInput{
 		Body:   aws.ReadSeekCloser(bytes.NewReader(data)),
 		Bucket: aws.String(rs.config.S3Bucket),
-		Key:    aws.String(rs.config.S3Key),
+		Key:    aws.String(timePartition),
 	}
 
 	_, err := rs.s3.PutObject(obj)

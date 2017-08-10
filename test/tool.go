@@ -1,11 +1,11 @@
 package test
 
 import (
-	"encoding/binary"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
@@ -64,14 +64,13 @@ func MockUnixEchoServer(timeout time.Duration) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var count uint32
-	ticker := time.NewTicker(time.Second * 1)
-	buff := make([]byte, 4)
+	var count int
+	ticker := time.NewTicker(time.Millisecond * 200)
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
 	go func() {
 		deadSign := <-sig
-		sock.Close()
+		_ = sock.Close()
 		log.Fatal(deadSign)
 	}()
 
@@ -80,15 +79,15 @@ func MockUnixEchoServer(timeout time.Duration) {
 		log.Fatal(err)
 	}
 
+	deadline := time.After(timeout)
 	for {
 		select {
-		case <-time.After(timeout):
+		case <-deadline:
 			_ = fd.Close()
 			_ = sock.Close()
 			return
 		case <-ticker.C:
-			binary.LittleEndian.PutUint32(buff, count)
-			_, err = fd.Write(buff)
+			_, err = fd.Write([]byte(strconv.Itoa(count)))
 			if err != nil {
 				log.Print(err)
 			}
