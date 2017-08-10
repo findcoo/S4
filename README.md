@@ -1,7 +1,7 @@
-## rxs3
+## S4
 
-  unix socket 에서 s3로 바로 로그를 전송하는 경량형 로그 수집기를 만드는 프로젝트
-  
+  Simple Storage Service Stream  
+
 ### Goal
 
-  반응성을 높인 수집기를 만들자!
+  cloud based minimal log aggregator 

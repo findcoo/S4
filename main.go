@@ -64,7 +64,7 @@ func s4Handler(c *cli.Context) error {
 	bucket, key := path.Split(s3Path)
 	bucket = strings.TrimRight(bucket, "/")
 
-	config := &Config{
+	config := &S4Config{
 		AWSRegion:         region,
 		S3Bucket:          bucket,
 		S3Key:             key,
@@ -83,7 +83,7 @@ func s4Handler(c *cli.Context) error {
 func mockingTest(c *cli.Context) error {
 	go test.MockUnixEchoServer(time.Second * 10)
 
-	config := &Config{
+	config := &S4Config{
 		FlushIntervalTime: time.Second * 1,
 	}
 

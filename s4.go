@@ -19,15 +19,15 @@ import (
 )
 
 // DefaultConfig default rxs3 config
-var DefaultConfig = &Config{
+var DefaultConfig = &S4Config{
 	AWSRegion:         "",
 	S3Bucket:          "",
 	S3Key:             "",
 	FlushIntervalTime: time.Minute * 2,
 }
 
-// Config AWS S3 configurations
-type Config struct {
+// S4Config AWS S3 configurations
+type S4Config struct {
 	AWSRegion string
 	//AWSAccessKey string
 	//AWSSecretKey string
@@ -36,16 +36,16 @@ type Config struct {
 	FlushIntervalTime time.Duration
 }
 
-// RxS3 streaming data to AWS S3
-type RxS3 struct {
+// S4 streaming data to AWS S3
+type S4 struct {
 	db     *leveldb.DB
 	s3     *s3.S3
-	config *Config
+	config *S4Config
 	mutex  *sync.Mutex
 }
 
 // NewRxS3 RxS3 생성
-func NewRxS3(dbPath string, config *Config) *RxS3 {
+func NewRxS3(dbPath string, config *S4Config) *S4 {
 	if config == nil {
 		config = DefaultConfig
 	}
@@ -66,7 +66,7 @@ func NewRxS3(dbPath string, config *Config) *RxS3 {
 		log.Fatal(err)
 	}
 
-	rxs3 := &RxS3{
+	rxs3 := &S4{
 		db:     ldb,
 		s3:     s3.New(sess),
 		config: config,
@@ -77,7 +77,7 @@ func NewRxS3(dbPath string, config *Config) *RxS3 {
 }
 
 // WriteBuffer write data to leveldb as buffer
-func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
+func (rs *S4) WriteBuffer(keyIndex int64, data []byte) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Print(r)
@@ -90,7 +90,7 @@ func (rs *RxS3) WriteBuffer(keyIndex int64, data []byte) {
 }
 
 // BufferConsumer consume all data from leveldb, data will be deleted
-func (rs *RxS3) BufferConsumer() *stream.BytesStream {
+func (rs *S4) BufferConsumer() *stream.BytesStream {
 	bs := stream.NewBytesStream(stream.NewObserver(nil))
 	ticker := time.NewTicker(rs.config.FlushIntervalTime)
 	iter := rs.db.NewIterator(nil, nil)
@@ -130,7 +130,7 @@ func (rs *RxS3) BufferConsumer() *stream.BytesStream {
 }
 
 // SendToS3 send data to s3 bucket
-func (rs *RxS3) SendToS3(data []byte) error {
+func (rs *S4) SendToS3(data []byte) error {
 	now := time.Now()
 	key := rs.config.S3Key
 	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%d%d", key, now.Year(), int(now.Month()), now.Day(), now.Hour(), now.Minute())
@@ -145,7 +145,7 @@ func (rs *RxS3) SendToS3(data []byte) error {
 }
 
 // BufferProducer read from unix socket and write to leveldb
-func (rs *RxS3) BufferProducer(sockPath string) *input.UnixSocket {
+func (rs *S4) BufferProducer(sockPath string) *input.UnixSocket {
 	var keyIndex int64
 	us := input.OpenUnixSocket(sockPath)
 

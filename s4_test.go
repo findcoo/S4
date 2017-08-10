@@ -10,9 +10,9 @@ import (
 	"github.com/findcoo/rxs3/test"
 )
 
-var rs = NewRxS3("./test.db", &Config{
+var rs = NewRxS3("./test.db", &S4Config{
 	AWSRegion:         "ap-northeast-2",
-	S3Bucket:          "test.quicket.rxs3",
+	S3Bucket:          "test.rxs3",
 	S3Key:             "word",
 	FlushIntervalTime: time.Second * 1,
 })
