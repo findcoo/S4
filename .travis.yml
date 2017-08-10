@@ -6,8 +6,6 @@ services:
 cache:
   directories:
   - $TRAVIS_BUILD_DIR/vendor
-  - $TRAVIS_BUILD_DIR/glide.lock
-  - $GOPATH/bin
 before_install:
 - curl https://glide.sh/get | sh
 install: make install
