@@ -1,17 +1,17 @@
 language: go
 go:
 - 1.8.x
-dd:
-  secure: cUJeOOtcvDSN94JULpyoi8M4PHObsigGuVNYWF/Qve3KTNVBpaeg+vS+ZBiBoNRwWFw9AM5sbNIbeZmexHgqKRgARBvYUxBMK8n1t+WP3IEHmyJToOT4zJ4mgdzS3gyvZSZqz2bk4KsLU416hOrapt1IS9vN6k94tgH6FHOAcdDepJ0KAqGd7xRXoZpy8ArfaPK5AUUwQU/bLcbd7jbcCJutCLMAKD1gEE23jBkBN2P17Bv67vt87lRW8kJ3grmr/4cz6vuObFRWCxuEbPTqgAH/2CqsDQJ0pgah3vW4ZooWrJFfUaarZW0r0XKDCEzBu2WyUzoJJ/+TgZJUWPcMAsvhKbxHP9CSjEYL+HWg7pCDeK3uW5fJGi5kGPP/RhPlZzhk6virrqFmq93lFjnHyE0KNx7t3Djfx55Sv7e9tY0+aVvopUG7t4JFWljlJ0wJHkIVNaX8th6+WSqcKVW3kT2ztE4f4dFhZG4z2s9mdAB1cp/VbsS4nAyH0i36nQi5dkUFrxfiOkmj1ouTZ0qBejJqWrrf2vFj8yPhMo1p+NPciduYJ7PgRHfhoCHQW8kgTRrF8BQJZQqfKB8fUGfyaHV2xNdiCw2ZCyohzHksYNLypt2uNyn7ekyZVrYxs0vy53Ttaq9WEPDAuMYx9PxY/kVmVPerv/uz4DzdN1DB1W8=
 services:
- - docker
+- docker
 cache:
- directories:
+  directories:
   - $TRAVIS_BUILD_DIR/vendor
   - $GOPATH/bin
 before_install:
- - curl https://glide.sh/get | sh
+- curl https://glide.sh/get | sh
 install: make install
 script:
- - make test
- - go build
+- make test
+- go build
+dd:
+  secure: TlxbBEfPfY/0H43l8mvqu+ImyeYOhXFf8SOkjlwM+LcHctFXlIO+t1R67sDfGt9raNYguopbACi4bz32K0FxysLoXilQhuIM9fjvUxQ7F7N1fHzE9lYwzVkrpoAklyiTE9uT3bdoiVjf4P9SsNfnz9fmOVlkAJ+C68ejpOToUGR9flHaE38rZ9X7FFRGXzCWscZk7LqyppjzMhXFKIuxlTpzyWhM17uLxGG+DJi4gNH4LPEwjsp+XJwN+TpWjXnsp+td5xVy4vk/h67Ec6BuKuFKxHKJaDpkJyymVttFSGQj4DGWuvPHr7n5Cw+KmaKhK98fxijoFAYz9pOWi538FrWhIAvlR7kTl+i4nTGnyTEjooKcCqK5A6isdDO8b+6TIBV/ro3xfl7wjvFe4h+dzolOquya8IzUrB69ur3c6ARgqMTJ8F2VEOMkILJZU43lAt9dk8v4xr0NWyqLlzvzPjZznoPFwDv9ZDRLjUDeFhe7JFqU3DALqXsm1Rbtw7UzBuhA2NR2ePuqLV3bLE4RAB4iWdak8Vn5IV0gjWr3SU4PkCIWtj2odD11wHgD9Bmer/MspF5Nv4dY2C7KD0LAH6233Q3cZOy0ZJarZwZC1hcVHJQLXdKwSrblGjvRJ/QiKNKlAz9NxdLYToGLnHJb4YpyYxPjHatFfNDjDxQdGcI=

@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -131,16 +133,29 @@ func (rs *S4) BufferConsumer() *stream.BytesStream {
 
 // SendToS3 send data to s3 bucket
 func (rs *S4) SendToS3(data []byte) error {
+	var compressed bytes.Buffer
+	gzw := gzip.NewWriter(&compressed)
+	_, err := gzw.Write(data)
+	if err != nil {
+		gzw.Close()
+		return err
+	}
+	gzw.Close()
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
 	now := time.Now()
 	key := rs.config.S3Key
-	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%d%d", key, now.Year(), int(now.Month()), now.Day(), now.Hour(), now.Minute())
+	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%s-%d%d.gz", key, now.Year(), int(now.Month()), now.Day(), hostname, now.Hour(), now.Minute())
 	obj := &s3.PutObjectInput{
-		Body:   aws.ReadSeekCloser(bytes.NewReader(data)),
+		Body:   aws.ReadSeekCloser(bytes.NewReader(compressed.Bytes())),
 		Bucket: aws.String(rs.config.S3Bucket),
 		Key:    aws.String(timePartition),
 	}
 
-	_, err := rs.s3.PutObject(obj)
+	_, err = rs.s3.PutObject(obj)
 	return err
 }
 
