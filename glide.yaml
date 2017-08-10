@@ -13,3 +13,5 @@ import:
   - leveldb
   - leveldb/filter
   - leveldb/opt
+- package: github.com/urfave/cli
+  version: ~1.19.1

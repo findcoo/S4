@@ -1,5 +1,5 @@
-hash: 51b8863a73eb41b21667358046aea59f0c5996b2cfc2d9de3857016801982247
-updated: 2017-08-10T17:48:57.051282678+09:00
+hash: a25b39314eac565020bb899620f2d79e00f91c121c59b677ff8d6fec3e4c45ca
+updated: 2017-08-10T19:52:27.164877847+09:00
 imports:
 - name: github.com/aws/aws-sdk-go
   version: d05c000e0b41647375a4093373eb1301e02c8a4e
@@ -53,5 +53,5 @@ imports:
   - leveldb/table
   - leveldb/util
 - name: github.com/urfave/cli
-  version: b99aa811b4c1dd84cc6bccb8499c82c72098085a
+  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
 testImports: []
