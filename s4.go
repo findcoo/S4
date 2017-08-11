@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/findcoo/S4/input"
 	"github.com/findcoo/stream"
+	"github.com/google/uuid"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
@@ -79,14 +80,19 @@ func NewS4(dbPath string, config *S4Config) *S4 {
 }
 
 // WriteBuffer write data to leveldb as buffer
-func (rs *S4) WriteBuffer(keyIndex int64, data []byte) {
+func (rs *S4) WriteBuffer(id uint32, data []byte) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Print(r)
 		}
 	}()
 
-	if err := rs.db.Put([]byte(strconv.FormatInt(keyIndex, 10)), data, nil); err != nil {
+	key := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, id)
+	debug := binary.LittleEndian.Uint32(key)
+
+	log.Printf("uuid %d", debug)
+	if err := rs.db.Put(key, data, nil); err != nil {
 		log.Panic(err)
 	}
 }
@@ -137,10 +143,10 @@ func (rs *S4) SendToS3(data []byte) error {
 	gzw := gzip.NewWriter(&compressed)
 	_, err := gzw.Write(data)
 	if err != nil {
-		gzw.Close()
+		_ = gzw.Close()
 		return err
 	}
-	gzw.Close()
+	_ = gzw.Close()
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -161,12 +167,11 @@ func (rs *S4) SendToS3(data []byte) error {
 
 // BufferProducer read from unix socket and write to leveldb
 func (rs *S4) BufferProducer(sockPath string) *input.UnixSocket {
-	var keyIndex int64
 	us := input.OpenUnixSocket(sockPath)
 
 	go us.Publish().Subscribe(func(data []byte) {
-		rs.WriteBuffer(keyIndex, data)
-		keyIndex++
+		id := uuid.New().ID()
+		rs.WriteBuffer(id, data)
 	})
 
 	return us

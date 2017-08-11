@@ -30,13 +30,13 @@ func TestWriteBuffer(t *testing.T) {
 	_ = os.Remove("./test.db")
 	<-test.UnixTestServer()
 
-	var keyIndex int64
+	var key uint32
 	us := input.OpenUnixSocket("./test.sock")
 
 	us.Publish().Subscribe(func(data []byte) {
-		rs.WriteBuffer(keyIndex, data)
-		t.Logf("write index:%d, data: %s", keyIndex, data)
-		keyIndex++
+		rs.WriteBuffer(key, data)
+		t.Logf("write index:%d, data: %s", key, data)
+		key++
 	})
 }
 
