@@ -4,7 +4,6 @@ go:
 addons:
  apt:
   sources:
-   - glide
    - sourceline: 'ppa:masterminds/glide'
   packages:
    - glide
