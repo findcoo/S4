@@ -30,9 +30,8 @@ func echo(c net.Conn) bool {
 	return false
 }
 
-// UnixTestServer unix socket을 테스트하기 위한 테스트 서버
+// UnixTestServer unix socket echo server for testing
 func UnixTestServer() <-chan struct{} {
-	_ = os.Remove("./test.sock")
 	ready := make(chan struct{}, 1)
 	sock, err := net.Listen("unix", "./test.sock")
 	if err != nil {
@@ -45,6 +44,7 @@ func UnixTestServer() <-chan struct{} {
 		for {
 			fd, err := sock.Accept()
 			if err != nil {
+				_ = sock.Close()
 				log.Fatal(err)
 			}
 
@@ -56,6 +56,16 @@ func UnixTestServer() <-chan struct{} {
 	}()
 
 	return ready
+}
+
+// UnixTestClient unix socket echo client for testing
+func UnixTestClient(sockPath string) {
+	conn, err := net.Dial("unix", sockPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	echo(conn)
 }
 
 // MockUnixEchoServer unix socket mocking server

@@ -31,7 +31,7 @@ func TestWriteBuffer(t *testing.T) {
 	<-test.UnixTestServer()
 
 	var key uint32
-	us := input.OpenUnixSocket("./test.sock")
+	us := input.ConnectUnixSocket("./test.sock")
 
 	us.Publish().Subscribe(func(data []byte) {
 		rs.WriteBuffer(key, data)
