@@ -63,7 +63,9 @@ func ListenUnixSocket(sockPath string) *UnixSocket {
 
 func (us *UnixSocket) shutdown() {
 	_ = us.conn.Close()
-	_ = us.listen.Close()
+	if us.listen != nil {
+		_ = us.listen.Close()
+	}
 }
 
 // Publish start observer process and publish the stream read from unix socket

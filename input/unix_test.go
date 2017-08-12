@@ -29,16 +29,17 @@ func TestRead(t *testing.T) {
 }
 
 func TestListen(t *testing.T) {
-	sockPath := "./test.sock"
+	sockPath := "./listen.sock"
 	go func() {
 		us := ListenUnixSocket(sockPath)
 		us.Publish().Subscribe(check)
 	}()
 
 	for {
-		if _, err := os.Stat(sockPath); !os.IsNotExist(err) {
-			<-time.After(time.Second * 1)
+		time.Sleep(time.Second * 1)
+		if _, err := os.Stat(sockPath); err == nil {
 			test.UnixTestClient(sockPath)
+			break
 		}
 	}
 }
