@@ -1,6 +1,11 @@
 language: go
 go:
  - 1.8.x
+addons:
+ apt:
+  sources:
+   - glide
+   - sourceline: 'ppa:masterminds/glide'
 env:
  global:
   - secure: IlBnOfg4pq7V4Iv94luQ3Wk5mTvfVinZX0QNhoJ4vyBAZFBsWPq1nvMDpscf41D6UOHOYJa6vWlacm+n0ZRJXiYGwpbNtB7JqC63W4/KnjEl8RCMsY1YshQyEYN7vm/UqcITDdIxLW7IkflCdhtH448EptvwVkGZQZIC9s/Qf5OYBdjeYX3+WJd2hGmOjOf+J8smdycYXL1S05frONQK3uh36mf9CQqC72xicTfxVWH7K9JTncpy4bdh06Zjl1Y74lWLyLOsWlwXMbF7QKUEW/0CRxMVAHzcu9e6CcFRrkRq+JERWaCXgrw4cUGUguvcXNl/WvirIxxPieolui2yjy2fehSNCTFTWiFGZZzdtG/DmCHNtdUoFUjrdYQyRNvf2yxi3PtZNomPK2M7YimMhj07HtfdEQqFJSwttZXbVoKBtSkHNLXYrNZgPUXDi0SJxLxu2F6MEnfAC6OXVPad461mmYLNvt61+IqBt1jS6FJjMAsx4ADZsK27nK635gnNp8wCpD7zdyeSQuoXvLkE+F6IyEHq8ZvRpiVCz5N6DP3uO4qpOPpodnmZmS9I45T20O7OwEDzd3eDSosPXLLW4A2sGhoxj+0pCkIxpZaEcbGc8k9Jd02AeC/+YSz0D5uNlrP3Wlcbeq8OR4JsuHtdGn9hstvepQ3a3UuMilYO6RE=
@@ -8,8 +13,6 @@ env:
 cache:
   directories:
   - $TRAVIS_BUILD_DIR/vendor
-before_install:
- - curl https://glide.sh/get | sh
 install: make install
 script:
  - make test
