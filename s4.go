@@ -167,7 +167,7 @@ func (rs *S4) SendToS3(data []byte) error {
 
 // BufferProducer read from unix socket and write to leveldb
 func (rs *S4) BufferProducer(sockPath string) *input.UnixSocket {
-	us := input.OpenUnixSocket(sockPath)
+	us := input.ConnectUnixSocket(sockPath)
 
 	go us.Publish().Subscribe(func(data []byte) {
 		id := uuid.New().ID()

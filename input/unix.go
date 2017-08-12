@@ -14,12 +14,13 @@ import (
 
 // UnixSocket read data from unix socket
 type UnixSocket struct {
-	conn net.Conn
+	listen net.Listener
+	conn   net.Conn
 	*stream.BytesStream
 }
 
-// OpenUnixSocket open unix socket
-func OpenUnixSocket(sockPath string) *UnixSocket {
+// ConnectUnixSocket connect unix socket
+func ConnectUnixSocket(sockPath string) *UnixSocket {
 	c, err := net.Dial("unix", sockPath)
 	if err != nil {
 		log.Fatal(err)
@@ -36,6 +37,35 @@ func OpenUnixSocket(sockPath string) *UnixSocket {
 	return us
 }
 
+// ListenUnixSocket listen unix socket
+func ListenUnixSocket(sockPath string) *UnixSocket {
+	sock, err := net.Listen("unix", sockPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fd, err := sock.Accept()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	obv := stream.NewObserver(stream.DefaultObservHandler())
+	bytesStream := stream.NewBytesStream(obv)
+	us := &UnixSocket{
+		listen:      sock,
+		conn:        fd,
+		BytesStream: bytesStream,
+	}
+	go us.signalHandler()
+
+	return us
+}
+
+func (us *UnixSocket) shutdown() {
+	_ = us.conn.Close()
+	_ = us.listen.Close()
+}
+
 // Publish start observer process and publish the stream read from unix socket
 func (us *UnixSocket) Publish() *UnixSocket {
 	us.Target = func() {
@@ -45,7 +75,7 @@ func (us *UnixSocket) Publish() *UnixSocket {
 			_, err := us.conn.Read(buff)
 			if err != nil {
 				if err == io.EOF {
-					_ = us.conn.Close()
+					us.shutdown()
 					us.OnComplete()
 					return
 				}
@@ -54,6 +84,7 @@ func (us *UnixSocket) Publish() *UnixSocket {
 
 			select {
 			case <-us.AfterCancel():
+				us.shutdown()
 				return
 			default:
 				us.Send(bytes.Trim(buff, "\x00"))
