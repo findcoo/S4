@@ -119,6 +119,7 @@ func NewApp() *cli.App {
 	app.Name = "s4"
 	app.Usage = "Simple Storage Service Stream"
 	app.Action = s4Handler
+	app.Version = "1.0.3"
 	return app
 }
 
