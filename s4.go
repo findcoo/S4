@@ -37,6 +37,8 @@ type S4Config struct {
 	S3Bucket          string
 	S3Key             string
 	FlushIntervalTime time.Duration
+	BufferPath        string
+	SocketPath        string
 }
 
 // S4 streaming data to AWS S3
@@ -48,7 +50,7 @@ type S4 struct {
 }
 
 // NewS4 RxS3 생성
-func NewS4(dbPath string, config *S4Config) *S4 {
+func NewS4(config *S4Config) *S4 {
 	if config == nil {
 		config = DefaultConfig
 	}
@@ -57,7 +59,7 @@ func NewS4(dbPath string, config *S4Config) *S4 {
 		Filter: filter.NewBloomFilter(10),
 	}
 
-	ldb, err := leveldb.OpenFile(dbPath, options)
+	ldb, err := leveldb.OpenFile(config.BufferPath, options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,14 +167,24 @@ func (rs *S4) SendToS3(data []byte) error {
 	return err
 }
 
-// BufferProducer read from unix socket and write to leveldb
-func (rs *S4) BufferProducer(sockPath string) *input.UnixSocket {
-	us := input.ConnectUnixSocket(sockPath)
+// ClientBufferProducer read from unix socket and write to leveldb
+func (rs *S4) ClientBufferProducer() *input.UnixSocket {
+	us := input.ConnectUnixSocket(rs.config.SocketPath)
 
 	go us.Publish().Subscribe(func(data []byte) {
 		id := uuid.New().ID()
 		rs.WriteBuffer(id, data)
 	})
+	return us
+}
 
+// ServerBufferProducer recieve from client and write to leveldb
+func (rs *S4) ServerBufferProducer() *input.UnixSocket {
+	us := input.ListenUnixSocket(rs.config.SocketPath)
+
+	go us.Publish().Subscribe(func(data []byte) {
+		id := uuid.New().ID()
+		rs.WriteBuffer(id, data)
+	})
 	return us
 }

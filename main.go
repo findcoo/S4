@@ -13,21 +13,17 @@ import (
 )
 
 var (
-	// ErrSocketPathRequired require unix socket path
-	ErrSocketPathRequired = errors.New("-u, --unix option required")
-	// ErrS3PathRequired require s3 path
-	ErrS3PathRequired = errors.New("-s, --s3Path option required")
-	// ErrS3RegionRequired require s3 region name
-	ErrS3RegionRequired = errors.New("-r, --region option required")
-	s3ConfigFlag        = []cli.Flag{
+	// ErrOptionRequired require option
+	ErrOptionRequired = errors.New("some options required, check up help")
+	s3ConfigFlag      = []cli.Flag{
 		cli.StringFlag{
 			Name:   "s3Path, s",
-			Usage:  "s3 path",
+			Usage:  "s3 path, required",
 			EnvVar: "S4_S3_PATH",
 		},
 		cli.StringFlag{
 			Name:   "region, r",
-			Usage:  "aws s3 region",
+			Usage:  "aws s3 region, required",
 			EnvVar: "S4_REGION",
 		},
 	}
@@ -40,7 +36,7 @@ var (
 		},
 		cli.StringFlag{
 			Name:   "unix, u",
-			Usage:  "unix file socket path",
+			Usage:  "unix file socket path, required",
 			EnvVar: "S4_SOCKET_PATH",
 		},
 		cli.DurationFlag{
@@ -52,14 +48,20 @@ var (
 	}
 )
 
-func s4Handler(c *cli.Context) error {
+func s4OptionParser(c *cli.Context) (*S4Config, error) {
 	bufferPath := c.String("buffer")
 	socketPath := c.String("unix")
 	if socketPath == "" {
-		return ErrSocketPathRequired
+		return nil, ErrOptionRequired
 	}
 	s3Path := c.String("s3Path")
+	if s3Path == "" {
+		return nil, ErrOptionRequired
+	}
 	region := c.String("region")
+	if region == "" {
+		return nil, ErrOptionRequired
+	}
 	flush := c.Duration("flush")
 	bucket, key := path.Split(s3Path)
 	bucket = strings.TrimRight(bucket, "/")
@@ -69,9 +71,37 @@ func s4Handler(c *cli.Context) error {
 		S3Bucket:          bucket,
 		S3Key:             key,
 		FlushIntervalTime: flush,
+		BufferPath:        bufferPath,
+		SocketPath:        socketPath,
 	}
-	s4 := NewS4(bufferPath, config)
-	s4.BufferProducer(socketPath)
+
+	return config, nil
+}
+
+func s4Client(c *cli.Context) error {
+	config, err := s4OptionParser(c)
+	if err != nil {
+		return err
+	}
+
+	s4 := NewS4(config)
+	s4.ClientBufferProducer()
+	s4.BufferConsumer().Subscribe(func(data []byte) {
+		if err := s4.SendToS3(data); err != nil {
+			log.Print(err)
+		}
+	})
+	return nil
+}
+
+func s4Server(c *cli.Context) error {
+	config, err := s4OptionParser(c)
+	if err != nil {
+		return err
+	}
+
+	s4 := NewS4(config)
+	s4.ServerBufferProducer()
 	s4.BufferConsumer().Subscribe(func(data []byte) {
 		if err := s4.SendToS3(data); err != nil {
 			log.Print(err)
@@ -85,10 +115,11 @@ func mockingTest(c *cli.Context) error {
 
 	config := &S4Config{
 		FlushIntervalTime: time.Second * 1,
+		BufferPath:        "./mock.db",
 	}
 
-	s4 := NewS4("./mock.db", config)
-	s4.BufferProducer("./mock.sock")
+	s4 := NewS4(config)
+	s4.ClientBufferProducer()
 	deadline := time.After(time.Second * 10)
 	buffer := s4.BufferConsumer()
 	buffer.Subscribe(func(data []byte) {
@@ -106,7 +137,6 @@ func mockingTest(c *cli.Context) error {
 func NewApp() *cli.App {
 	app := cli.NewApp()
 
-	app.Flags = append(s3ConfigFlag, bufferConfigFlag...)
 	app.Commands = []cli.Command{
 		{
 			Name:    "mock",
@@ -114,11 +144,24 @@ func NewApp() *cli.App {
 			Usage:   "running mock unix socket server",
 			Action:  mockingTest,
 		},
+		{
+			Name:    "client",
+			Flags:   append(s3ConfigFlag, bufferConfigFlag...),
+			Aliases: []string{"c"},
+			Usage:   "connect unix socket and stream to s3",
+			Action:  s4Client,
+		},
+		{
+			Name:    "server",
+			Flags:   append(s3ConfigFlag, bufferConfigFlag...),
+			Aliases: []string{"s"},
+			Usage:   "listen connection and stream to s3",
+			Action:  s4Server,
+		},
 	}
 
 	app.Name = "s4"
 	app.Usage = "Simple Storage Service Stream"
-	app.Action = s4Handler
 	app.Version = "1.0.3"
 	return app
 }
