@@ -10,11 +10,13 @@ import (
 	"github.com/findcoo/S4/test"
 )
 
-var rs = NewS4("./test.db", &S4Config{
+var rs = NewS4(&S4Config{
 	AWSRegion:         "ap-northeast-2",
 	S3Bucket:          "test.s4",
 	S3Key:             "word",
 	FlushIntervalTime: time.Second * 1,
+	BufferPath:        "./test.db",
+	SocketPath:        "./test.sock",
 })
 
 func TestSendToS3(t *testing.T) {
@@ -31,7 +33,7 @@ func TestWriteBuffer(t *testing.T) {
 	<-test.UnixTestServer()
 
 	var key uint32
-	us := input.ConnectUnixSocket("./test.sock")
+	us := input.ConnectUnixSocket(rs.config.SocketPath)
 
 	us.Publish().Subscribe(func(data []byte) {
 		rs.WriteBuffer(key, data)
@@ -43,7 +45,7 @@ func TestWriteBuffer(t *testing.T) {
 func TestBufferProducer(t *testing.T) {
 	<-test.UnixTestServer()
 
-	us := rs.BufferProducer("./test.sock")
+	us := rs.ClientBufferProducer()
 
 	<-time.After(time.Second * 2)
 	us.Cancel()
