@@ -1,7 +1,7 @@
 package input
 
 import (
-	"bytes"
+	"bufio"
 	"io"
 	"log"
 	"net"
@@ -71,26 +71,25 @@ func (us *UnixSocket) shutdown() {
 // Publish start observer process and publish the stream read from unix socket
 func (us *UnixSocket) Publish() *UnixSocket {
 	us.Target = func() {
-		buff := make([]byte, 1024)
+		scanner := bufio.NewScanner(us.conn)
 
-		for {
-			_, err := us.conn.Read(buff)
-			if err != nil {
-				if err == io.EOF {
-					us.shutdown()
-					us.OnComplete()
-					return
-				}
-				log.Fatal(err)
-			}
-
+		for scanner.Scan() {
 			select {
 			case <-us.AfterCancel():
 				us.shutdown()
 				return
 			default:
-				us.Send(bytes.Trim(buff, "\x00"))
+				data := scanner.Bytes()
+				us.Send(data)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			if err == io.EOF {
+				us.shutdown()
+				us.OnComplete()
+				return
+			}
+			log.Fatal(err)
 		}
 	}
 	us.Watch(nil)

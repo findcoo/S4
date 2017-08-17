@@ -91,9 +91,7 @@ func (rs *S4) WriteBuffer(id uint32, data []byte) {
 
 	key := make([]byte, 4)
 	binary.LittleEndian.PutUint32(key, id)
-	debug := binary.LittleEndian.Uint32(key)
 
-	log.Printf("uuid %d", debug)
 	if err := rs.db.Put(key, data, nil); err != nil {
 		log.Panic(err)
 	}
@@ -135,7 +133,6 @@ func (rs *S4) BufferConsumer() *stream.BytesStream {
 			iter.Release()
 		}
 	}
-
 	return bs.Publish(nil)
 }
 

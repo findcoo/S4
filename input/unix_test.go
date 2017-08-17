@@ -43,3 +43,19 @@ func TestListen(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkUnix(b *testing.B) {
+	ready, _ := test.UnixBenchmarkServer(100)
+	<-ready
+	us := ConnectUnixSocket("./bench.sock")
+
+	var counter int
+	stream := us.Publish()
+	stream.Subscribe(func(data []byte) {
+		log.Print(string(data))
+		counter++
+		if 100 == counter {
+			stream.Cancel()
+		}
+	})
+}

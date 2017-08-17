@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -56,6 +57,34 @@ func UnixTestServer() <-chan struct{} {
 	}()
 
 	return ready
+}
+
+// UnixBenchmarkServer benchmark unix server
+func UnixBenchmarkServer(n int) (<-chan struct{}, <-chan struct{}) {
+	ready := make(chan struct{}, 1)
+	done := make(chan struct{}, 1)
+	sock, err := net.Listen("unix", "./bench.sock")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ready <- struct{}{}
+	go func() {
+		fd, err := sock.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for i := 0; i <= n; i++ {
+			_, err := fd.Write([]byte(fmt.Sprintf("benchmaking: %d\n", i)))
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		_ = fd.Close()
+		_ = sock.Close()
+		done <- struct{}{}
+	}()
+	return ready, done
 }
 
 // UnixTestClient unix socket echo client for testing
