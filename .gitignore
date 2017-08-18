@@ -1,7 +1,5 @@
 S4
-test.db
-buffer.db
-mock.db
-test.sock
+*.db
+*.sock
 vendor
 *.swp
