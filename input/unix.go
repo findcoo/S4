@@ -91,6 +91,9 @@ func (us *UnixSocket) Publish() *UnixSocket {
 			}
 			log.Fatal(err)
 		}
+		us.shutdown()
+		us.OnComplete()
+
 	}
 	us.Watch(nil)
 

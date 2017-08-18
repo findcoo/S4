@@ -18,11 +18,11 @@ func echo(c net.Conn) bool {
 		time.Sleep(time.Millisecond * 200)
 
 		if i == 5 {
-			_, err = c.Write([]byte("world"))
+			_, err = c.Write([]byte("world\n"))
 			_ = c.Close()
 			return true
 		}
-		_, err = c.Write([]byte("hello this byte stream test!"))
+		_, err = c.Write([]byte("hello this byte stream test!\n"))
 		if err != nil {
 			log.Fatal(err)
 		}

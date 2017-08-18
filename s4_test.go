@@ -30,7 +30,7 @@ func TestSendToS3(t *testing.T) {
 func TestWriteBuffer(t *testing.T) {
 	<-test.UnixTestServer()
 
-	var key uint32
+	var key uint64
 	us := input.ConnectUnixSocket(s4.config.SocketPath)
 
 	us.Publish().Subscribe(func(data []byte) {
@@ -51,9 +51,16 @@ func TestBufferProducer(t *testing.T) {
 
 func TestReadBuffer(t *testing.T) {
 	iter := s4.db.NewIterator(nil, nil)
+
 	for iter.Next() {
-		t.Log(iter.Key())
-		t.Log(iter.Value())
+		t.Log(string(iter.Key()))
+		t.Log(string(iter.Value()))
+	}
+	iter.Release()
+	err := iter.Error()
+	if err != nil {
+		t.Log(err)
+		t.Fail()
 	}
 }
 
@@ -76,18 +83,12 @@ func BenchmarkS4(b *testing.B) {
 		SocketPath:        "./bench.sock",
 	})
 
-	ready, done := test.UnixBenchmarkServer(100)
+	ready, _ := test.UnixBenchmarkServer(10)
 	<-ready
 	s4.ClientBufferProducer()
-	<-done
 
-	var counter int
 	consumer := s4.BufferConsumer()
 	consumer.Subscribe(func(data []byte) {
 		log.Print(string(data))
-		counter++
-		if 100 == counter {
-			consumer.Cancel()
-		}
 	})
 }

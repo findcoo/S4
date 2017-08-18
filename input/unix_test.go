@@ -45,7 +45,8 @@ func TestListen(t *testing.T) {
 }
 
 func BenchmarkUnix(b *testing.B) {
-	ready, _ := test.UnixBenchmarkServer(100)
+	iterN := 100
+	ready, _ := test.UnixBenchmarkServer(iterN)
 	<-ready
 	us := ConnectUnixSocket("./bench.sock")
 
@@ -54,7 +55,8 @@ func BenchmarkUnix(b *testing.B) {
 	stream.Subscribe(func(data []byte) {
 		log.Print(string(data))
 		counter++
-		if 100 == counter {
+		if iterN == counter {
+			b.Logf("count %d", counter)
 			stream.Cancel()
 		}
 	})
