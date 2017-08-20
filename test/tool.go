@@ -60,10 +60,10 @@ func UnixTestServer() <-chan struct{} {
 }
 
 // UnixBenchmarkServer benchmark unix server
-func UnixBenchmarkServer(n int) (<-chan struct{}, <-chan struct{}) {
+func UnixBenchmarkServer(n int, sockpath string) (<-chan struct{}, <-chan struct{}) {
 	ready := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
-	sock, err := net.Listen("unix", "./bench.sock")
+	sock, err := net.Listen("unix", sockpath)
 	if err != nil {
 		log.Fatal(err)
 	}

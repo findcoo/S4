@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/findcoo/S4/lake"
+	"github.com/findcoo/S4/river"
 	"github.com/findcoo/S4/test"
 	"github.com/urfave/cli"
 )
@@ -48,7 +50,7 @@ var (
 	}
 )
 
-func s4OptionParser(c *cli.Context) (*S4Config, error) {
+func s4OptionParser(c *cli.Context) (*river.Config, error) {
 	bufferPath := c.String("buffer")
 	socketPath := c.String("unix")
 	if socketPath == "" {
@@ -66,15 +68,14 @@ func s4OptionParser(c *cli.Context) (*S4Config, error) {
 	bucket, key := path.Split(s3Path)
 	bucket = strings.TrimRight(bucket, "/")
 
-	config := &S4Config{
-		AWSRegion:         region,
-		S3Bucket:          bucket,
-		S3Key:             key,
-		FlushIntervalTime: flush,
+	s3lake := lake.NewS3Lake(region, bucket, key)
+
+	config := &river.Config{
 		BufferPath:        bufferPath,
 		SocketPath:        socketPath,
+		FlushIntervalTime: flush,
+		Lake:              s3lake,
 	}
-
 	return config, nil
 }
 
@@ -84,10 +85,10 @@ func s4Client(c *cli.Context) error {
 		return err
 	}
 
-	s4 := NewS4(config)
-	s4.ClientBufferProducer()
-	s4.BufferConsumer().Subscribe(func(data []byte) {
-		if err := s4.SendToS3(data); err != nil {
+	river := river.NewJSONRiver(config)
+	river.Accept()
+	river.Consume().Subscribe(func(data []byte) {
+		if err := river.Push(data); err != nil {
 			log.Print(err)
 		}
 	})
@@ -100,10 +101,10 @@ func s4Server(c *cli.Context) error {
 		return err
 	}
 
-	s4 := NewS4(config)
-	s4.ServerBufferProducer()
-	s4.BufferConsumer().Subscribe(func(data []byte) {
-		if err := s4.SendToS3(data); err != nil {
+	river := river.NewJSONRiver(config)
+	river.Listen()
+	river.Consume().Subscribe(func(data []byte) {
+		if err := river.Push(data); err != nil {
 			log.Print(err)
 		}
 	})
@@ -113,19 +114,19 @@ func s4Server(c *cli.Context) error {
 func mockingTest(c *cli.Context) error {
 	go test.MockUnixEchoServer(time.Second * 10)
 
-	config := &S4Config{
+	config := &river.Config{
 		FlushIntervalTime: time.Second * 1,
 		BufferPath:        "./mock.db",
 	}
 
-	s4 := NewS4(config)
-	s4.ClientBufferProducer()
+	river := river.NewJSONRiver(config)
+	river.Accept()
 	deadline := time.After(time.Second * 10)
-	buffer := s4.BufferConsumer()
-	buffer.Subscribe(func(data []byte) {
+	consumer := river.Consume()
+	consumer.Subscribe(func(data []byte) {
 		select {
 		case <-deadline:
-			buffer.Cancel()
+			consumer.Cancel()
 		default:
 			log.Print(data)
 		}
