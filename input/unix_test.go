@@ -46,7 +46,7 @@ func TestListen(t *testing.T) {
 
 func BenchmarkUnix(b *testing.B) {
 	iterN := 100
-	ready, _ := test.UnixBenchmarkServer(iterN)
+	ready, _ := test.UnixBenchmarkServer(iterN, "./bench.sock")
 	<-ready
 	us := ConnectUnixSocket("./bench.sock")
 

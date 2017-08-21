@@ -73,6 +73,7 @@ func (us *UnixSocket) Publish() *UnixSocket {
 	us.Target = func() {
 		scanner := bufio.NewScanner(us.conn)
 
+		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			select {
 			case <-us.AfterCancel():
@@ -83,6 +84,7 @@ func (us *UnixSocket) Publish() *UnixSocket {
 				us.Send(data)
 			}
 		}
+
 		if err := scanner.Err(); err != nil {
 			if err == io.EOF {
 				us.shutdown()
