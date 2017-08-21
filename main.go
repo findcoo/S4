@@ -86,7 +86,7 @@ func s4Client(c *cli.Context) error {
 	}
 
 	river := river.NewJSONRiver(config)
-	river.Accept()
+	river.Connect()
 	river.Consume().Subscribe(func(data []byte) {
 		if err := river.Push(data); err != nil {
 			log.Print(err)
@@ -120,7 +120,7 @@ func mockingTest(c *cli.Context) error {
 	}
 
 	river := river.NewJSONRiver(config)
-	river.Accept()
+	river.Connect()
 	deadline := time.After(time.Second * 10)
 	consumer := river.Consume()
 	consumer.Subscribe(func(data []byte) {

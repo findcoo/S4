@@ -31,9 +31,9 @@ func echo(c net.Conn) bool {
 }
 
 // UnixTestServer unix socket echo server for testing
-func UnixTestServer() <-chan struct{} {
+func UnixTestServer(sockpath string) <-chan struct{} {
 	ready := make(chan struct{}, 1)
-	sock, err := net.Listen("unix", "./test.sock")
+	sock, err := net.Listen("unix", sockpath)
 	if err != nil {
 		log.Fatal(err)
 	}
