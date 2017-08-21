@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
@@ -18,11 +17,11 @@ func echo(c net.Conn) bool {
 		time.Sleep(time.Millisecond * 200)
 
 		if i == 5 {
-			_, err = c.Write([]byte("world\n"))
+			_, err = c.Write([]byte(`{"message": "world"}` + "\n"))
 			_ = c.Close()
 			return true
 		}
-		_, err = c.Write([]byte("hello this byte stream test!\n"))
+		_, err = c.Write([]byte(`{"message": "hello"}` + "\n"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -60,10 +59,10 @@ func UnixTestServer() <-chan struct{} {
 }
 
 // UnixBenchmarkServer benchmark unix server
-func UnixBenchmarkServer(n int) (<-chan struct{}, <-chan struct{}) {
+func UnixBenchmarkServer(n int, sockpath string) (<-chan struct{}, <-chan struct{}) {
 	ready := make(chan struct{}, 1)
 	done := make(chan struct{}, 1)
-	sock, err := net.Listen("unix", "./bench.sock")
+	sock, err := net.Listen("unix", sockpath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,7 +125,8 @@ func MockUnixEchoServer(timeout time.Duration) {
 			_ = sock.Close()
 			return
 		case <-ticker.C:
-			_, err = fd.Write([]byte(strconv.Itoa(count)))
+			msg := fmt.Sprintf(`{"index": "%d"}`, count)
+			_, err = fd.Write([]byte(msg))
 			if err != nil {
 				log.Print(err)
 			}
