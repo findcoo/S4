@@ -13,20 +13,39 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-// Lake data-lake interface
-type Lake interface {
+// Supplyer data-lake interface
+type Supplyer interface {
 	Push(data []byte) error
 }
 
-// S3Lake AWS S3 data-lake
-type S3Lake struct {
+// S3Supplyer AWS S3 data-lake
+type S3Supplyer struct {
 	Bucket string
 	Key    string
 	client *s3.S3
 }
 
-// NewS3Lake create s3 client
-func NewS3Lake(region, bucket, key string) *S3Lake {
+// ConsoleSupplyer commonly use for debugging
+type ConsoleSupplyer struct {
+	stdout *os.File
+}
+
+// NewConsoleSupplyer returns a ConsoleSupplyer
+func NewConsoleSupplyer() *ConsoleSupplyer {
+	console := &ConsoleSupplyer{
+		stdout: os.Stdout,
+	}
+	return console
+}
+
+// Push print a byte slice
+func (cs *ConsoleSupplyer) Push(data []byte) error {
+	_, err := cs.stdout.Write(data)
+	return err
+}
+
+// NewS3Supplyer create s3 client
+func NewS3Supplyer(region, bucket, key string) *S3Supplyer {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 	})
@@ -34,16 +53,16 @@ func NewS3Lake(region, bucket, key string) *S3Lake {
 		log.Fatal(err)
 	}
 
-	s3lake := &S3Lake{
+	s3supplyer := &S3Supplyer{
 		Bucket: bucket,
 		Key:    key,
 		client: s3.New(sess),
 	}
-	return s3lake
+	return s3supplyer
 }
 
 // Push push data to s3 bucket
-func (sl *S3Lake) Push(data []byte) error {
+func (sl *S3Supplyer) Push(data []byte) error {
 	var compressed bytes.Buffer
 	gzw := gzip.NewWriter(&compressed)
 	_, err := gzw.Write(data)

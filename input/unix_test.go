@@ -20,7 +20,7 @@ func check(data []byte) {
 }
 
 func TestRead(t *testing.T) {
-	ready := test.UnixTestServer()
+	ready := test.UnixTestServer("./test.sock")
 	<-ready
 	us := ConnectUnixSocket("./test.sock")
 

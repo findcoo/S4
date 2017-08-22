@@ -81,7 +81,8 @@ func (us *UnixSocket) Publish() *UnixSocket {
 				return
 			default:
 				data := scanner.Bytes()
-				us.Send(data)
+				line := append(data, []byte("\n")...)
+				us.Send(line)
 			}
 		}
 
