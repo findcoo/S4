@@ -32,7 +32,7 @@ var (
 	bufferConfigFlag = []cli.Flag{
 		cli.StringFlag{
 			Name:   "buffer, b",
-			Value:  "./buffer.db",
+			Value:  "./tmp",
 			Usage:  "path of the file buffer",
 			EnvVar: "S4_BUFFER_PATH",
 		},
@@ -194,7 +194,7 @@ func NewApp() *cli.App {
 
 	app.Name = "s4"
 	app.Usage = "Simple Storage Service Stream"
-	app.Version = "2.1.0"
+	app.Version = "2.1.1"
 	return app
 }
 

@@ -110,6 +110,6 @@ func (us *UnixSocket) signalHandler() {
 	select {
 	case state := <-sig:
 		log.Printf("capture signal: %s: Close unix socket", state)
-		_ = us.conn.Close()
+		us.shutdown()
 	}
 }
