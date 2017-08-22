@@ -14,7 +14,7 @@ var jsonRiver = NewJSONRiver(&Config{
 	BufferPath:        "./test.db",
 	SocketPath:        "./json.sock",
 	FlushIntervalTime: time.Second * 1,
-	Lake:              lake.NewS3Lake("ap-northeast-2", "test.s4", "json"),
+	Supplyer:          lake.NewS3Supplyer("ap-northeast-2", "test.s4", "json"),
 })
 
 func TestJSONFlow(t *testing.T) {

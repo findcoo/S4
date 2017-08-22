@@ -46,17 +46,17 @@ func NewLineRiver(config *Config) *LineRiver {
 	return lr
 }
 
-// Connect wrapper accept
+// Connect wrapping the accept
 func (lr *LineRiver) Connect() *input.UnixSocket {
 	return connect(lr.SocketPath, lr.Flow)
 }
 
-// Listen wrapper listen
+// Listen wrapping the listen
 func (lr *LineRiver) Listen() *input.UnixSocket {
 	return listen(lr.SocketPath, lr.Flow)
 }
 
-// Consume returns the bytes stream
+// Consume returns the *stream.BytesStream
 func (lr *LineRiver) Consume() *stream.BytesStream {
 	flush := func() {
 		data, _ := ioutil.ReadAll(lr.file)

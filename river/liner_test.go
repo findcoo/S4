@@ -14,7 +14,7 @@ var lineRiver = NewLineRiver(&Config{
 	BufferPath:        "",
 	SocketPath:        "./line.sock",
 	FlushIntervalTime: time.Second * 1,
-	Lake:              lake.NewS3Lake("ap-northeast-2", "test.s4", "line"),
+	Supplyer:          lake.NewS3Supplyer("ap-northeast-2", "test.s4", "line"),
 })
 
 func TestLineFlow(t *testing.T) {

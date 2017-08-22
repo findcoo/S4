@@ -94,7 +94,7 @@ func (jb *JSONRiver) Consume() *stream.BytesStream {
 	return bs.Publish(nil)
 }
 
-// Flow writes the byte slice that can serialize to json to LevelDB
+// Flow writes the byte slice that can be json to LevelDB
 func (jb *JSONRiver) Flow(data []byte) {
 	defer func() {
 		if r := recover(); r != nil {

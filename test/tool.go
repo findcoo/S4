@@ -97,7 +97,7 @@ func UnixTestClient(sockPath string) {
 }
 
 // MockUnixEchoServer unix socket mocking server
-func MockUnixEchoServer(timeout time.Duration) {
+func MockUnixEchoServer() chan<- struct{} {
 	sock, err := net.Listen("unix", "./mock.sock")
 	if err != nil {
 		log.Fatal(err)
@@ -117,20 +117,23 @@ func MockUnixEchoServer(timeout time.Duration) {
 		log.Fatal(err)
 	}
 
-	deadline := time.After(timeout)
-	for {
-		select {
-		case <-deadline:
-			_ = fd.Close()
-			_ = sock.Close()
-			return
-		case <-ticker.C:
-			msg := fmt.Sprintf(`{"index": "%d"}`, count)
-			_, err = fd.Write([]byte(msg))
-			if err != nil {
-				log.Print(err)
+	done := make(chan struct{}, 1)
+	go func() {
+		for {
+			select {
+			case <-done:
+				_ = fd.Close()
+				_ = sock.Close()
+				return
+			case <-ticker.C:
+				msg := fmt.Sprintf(`{"index": "%d"}`, count)
+				_, err = fd.Write([]byte(msg + "\n"))
+				if err != nil {
+					log.Print(err)
+				}
+				count++
 			}
-			count++
 		}
-	}
+	}()
+	return done
 }

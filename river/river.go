@@ -8,12 +8,13 @@ import (
 	"github.com/findcoo/stream"
 )
 
-// River meaning temporary data-stream flow to data-lake
+// River meaning temporary data-stream flow to the data-lake
 type River interface {
-	Accept() *input.UnixSocket
+	Connect() *input.UnixSocket
 	Listen() *input.UnixSocket
 	Consume() *stream.BytesStream
 	Flow(data []byte)
+	lake.Supplyer
 }
 
 // Config ...
@@ -21,7 +22,7 @@ type Config struct {
 	BufferPath        string
 	SocketPath        string
 	FlushIntervalTime time.Duration
-	lake.Lake
+	lake.Supplyer
 }
 
 func connect(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
@@ -47,6 +48,5 @@ func readyConsume(flush func(), flushtime time.Duration) (*stream.BytesStream, *
 	ticker := time.NewTicker(flushtime)
 
 	bs.Handler.AtCancel = flush
-	bs.Handler.AtComplete = flush
 	return bs, ticker
 }
