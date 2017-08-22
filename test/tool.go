@@ -98,31 +98,30 @@ func UnixTestClient(sockPath string) {
 
 // MockUnixEchoServer unix socket mocking server
 func MockUnixEchoServer() chan<- struct{} {
-	sock, err := net.Listen("unix", "./mock.sock")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var count int
-	ticker := time.NewTicker(time.Millisecond * 200)
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
+	done := make(chan struct{})
 	go func() {
-		deadSign := <-sig
-		_ = sock.Close()
-		log.Fatal(deadSign)
-	}()
+		sock, err := net.Listen("unix", "./mock.sock")
+		if err != nil {
+			log.Fatal(err)
+		}
+		var count int
+		ticker := time.NewTicker(time.Millisecond * 200)
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
+		go func() {
+			deadSign := <-sig
+			_ = sock.Close()
+			log.Fatal(deadSign)
+		}()
 
-	fd, err := sock.Accept()
-	if err != nil {
-		log.Fatal(err)
-	}
+		fd, err := sock.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	done := make(chan struct{}, 1)
-	go func() {
 		for {
 			select {
 			case <-done:
-				_ = fd.Close()
 				_ = sock.Close()
 				return
 			case <-ticker.C:
