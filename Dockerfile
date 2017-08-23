@@ -9,4 +9,4 @@ COPY glide.lock ./
 RUN glide install
 COPY ./ ./
 RUN go build
-ENTRYPOINT ["./S4"]
+ENTRYPOINT ["./s4"]
