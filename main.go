@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/findcoo/S4/lake"
-	"github.com/findcoo/S4/river"
-	"github.com/findcoo/S4/test"
+	"github.com/findcoo/s4/lake"
+	"github.com/findcoo/s4/river"
+	"github.com/findcoo/s4/test"
 	"github.com/urfave/cli"
 )
 
@@ -131,7 +131,12 @@ func s4Server(c *cli.Context) error {
 	switch rivername {
 	case "line":
 		liner := river.NewLineRiver(config)
-		listen(liner)
+		liner.Listen()
+		liner.Consume().Subscribe(func(data []byte) {
+			if err := liner.Push(data); err != nil {
+				log.Print(err)
+			}
+		})
 	case "json":
 		jsonr := river.NewJSONRiver(config)
 		listen(jsonr)

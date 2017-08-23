@@ -1,3 +1,7 @@
+S4
+s4
+tmp
+*.db
+*.sock
 vendor
-test.*
-mock.*
+*.swp

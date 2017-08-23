@@ -1,10 +1,11 @@
 package river
 
 import (
+	"log"
 	"time"
 
-	"github.com/findcoo/S4/input"
-	"github.com/findcoo/S4/lake"
+	"github.com/findcoo/s4/input"
+	"github.com/findcoo/s4/lake"
 	"github.com/findcoo/stream"
 )
 
@@ -26,6 +27,7 @@ type Config struct {
 }
 
 func connect(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
+	log.Print("Connect to the waterhead")
 	us := input.ConnectUnixSocket(sockpath)
 
 	go us.Publish().Subscribe(func(data []byte) {
@@ -35,6 +37,7 @@ func connect(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
 }
 
 func listen(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
+	log.Print("Listenning")
 	us := input.ListenUnixSocket(sockpath)
 
 	go us.Publish().Subscribe(func(data []byte) {
@@ -44,6 +47,7 @@ func listen(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
 }
 
 func readyConsume(flush func(), flushtime time.Duration) (*stream.BytesStream, *time.Ticker) {
+	log.Print("Consume the flow")
 	bs := stream.NewBytesStream(stream.NewObserver(nil))
 	ticker := time.NewTicker(flushtime)
 

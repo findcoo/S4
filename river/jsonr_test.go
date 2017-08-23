@@ -2,12 +2,13 @@ package river
 
 import (
 	"log"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/findcoo/S4/input"
-	"github.com/findcoo/S4/lake"
-	"github.com/findcoo/S4/test"
+	"github.com/findcoo/s4/input"
+	"github.com/findcoo/s4/lake"
+	"github.com/findcoo/s4/test"
 )
 
 var jsonRiver = NewJSONRiver(&Config{
@@ -16,6 +17,15 @@ var jsonRiver = NewJSONRiver(&Config{
 	FlushIntervalTime: time.Second * 1,
 	Supplyer:          lake.NewS3Supplyer("ap-northeast-2", "test.s4", "json"),
 })
+
+func lockUntilReady(socketpath string) {
+	for {
+		if _, err := os.Stat(socketpath); err == nil {
+			break
+		}
+		time.Sleep(time.Millisecond * 200)
+	}
+}
 
 func TestJSONFlow(t *testing.T) {
 	<-test.UnixTestServer(jsonRiver.SocketPath)
@@ -32,10 +42,8 @@ func TestJSONFlow(t *testing.T) {
 
 func TestJSONConnect(t *testing.T) {
 	<-test.UnixTestServer(jsonRiver.SocketPath)
-
 	us := jsonRiver.Connect()
-
-	<-time.After(time.Second * 2)
+	time.Sleep(time.Second * 2)
 	us.Cancel()
 }
 
