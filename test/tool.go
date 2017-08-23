@@ -92,7 +92,6 @@ func UnixTestClient(sockPath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	echo(conn)
 }
 

@@ -1,8 +1,8 @@
-hash: f41d81a4753fcda565f78058c99fc357f905cf0c1f496685abba160ea804c899
-updated: 2017-08-22T12:39:18.484197605+09:00
+hash: 9bf089a4650df59f3df209cf37cf5acf9b5e189bc89158cc20873cc7d6543f5a
+updated: 2017-08-23T21:43:30.151021802+09:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 264af29009637e0a9e5d4a276d0969c3ed918ffd
+  version: 5f216d3a320b04771edb3f39e9e063603551423a
   subpackages:
   - aws
   - aws/awserr
@@ -35,8 +35,6 @@ imports:
   version: c787282c39ac1fc618827141a1f762240def08a3
 - name: github.com/golang/snappy
   version: 553a641470496b2327abcac10b36396bd98e45c9
-- name: github.com/google/uuid
-  version: 064e2069ce9c359c118179501254f67d7d37ba24
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/syndtr/goleveldb
@@ -55,5 +53,5 @@ imports:
   - leveldb/table
   - leveldb/util
 - name: github.com/urfave/cli
-  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 testImports: []

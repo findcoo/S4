@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/findcoo/S4/input"
-	"github.com/findcoo/S4/lake"
-	"github.com/findcoo/S4/test"
+	"github.com/findcoo/s4/input"
+	"github.com/findcoo/s4/lake"
+	"github.com/findcoo/s4/test"
 )
 
 var jsonRiver = NewJSONRiver(&Config{

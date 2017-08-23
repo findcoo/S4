@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/findcoo/S4/test"
+	"github.com/findcoo/s4/test"
 )
 
 func check(data []byte) {

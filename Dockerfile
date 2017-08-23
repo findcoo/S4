@@ -3,7 +3,7 @@ MAINTAINER findcoo <thirdlif2@gmail.com>
 
 RUN apk update && apk add curl git
 RUN curl https://glide.sh/get | sh
-WORKDIR /go/src/github.com/findcoo/S4/
+WORKDIR /go/src/github.com/findcoo/s4/
 COPY glide.yaml ./
 COPY glide.lock ./
 RUN glide install

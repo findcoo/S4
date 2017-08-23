@@ -7,7 +7,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/findcoo/S4/input"
+	"github.com/findcoo/s4/input"
 	"github.com/findcoo/stream"
 )
 
@@ -24,6 +24,7 @@ func defaultBufferPath() string {
 
 // NewLineRiver returns a LineRiver
 func NewLineRiver(config *Config) *LineRiver {
+	log.Print("Create the Line-river")
 	if config.BufferPath == "" {
 		config.BufferPath = defaultBufferPath()
 	}
@@ -71,11 +72,13 @@ func (lr *LineRiver) Consume() *stream.BytesStream {
 			case <-bs.AfterCancel():
 				break PubLoop
 			case <-ticker.C:
-				data, err := ioutil.ReadAll(lr.file)
+				data, err := ioutil.ReadFile(lr.BufferPath)
 				if err != nil {
 					log.Fatal(err)
 				}
-				bs.Send(data)
+				if len(data) > 0 {
+					bs.Send(data)
+				}
 				if err := lr.file.Truncate(0); err != nil {
 					log.Fatal(err)
 				}

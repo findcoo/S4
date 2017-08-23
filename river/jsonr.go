@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/findcoo/S4/input"
+	"github.com/findcoo/s4/input"
 	"github.com/findcoo/stream"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -23,6 +23,7 @@ type JSONRiver struct {
 
 // NewJSONRiver returns a JSONRiver
 func NewJSONRiver(config *Config) *JSONRiver {
+	log.Print("Create the JSON-river")
 	options := &opt.Options{
 		Filter: filter.NewBloomFilter(10),
 	}
