@@ -2,7 +2,6 @@ package river
 
 import (
 	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -35,19 +34,13 @@ func TestLineConnect(t *testing.T) {
 	<-test.UnixTestServer(lineRiver.SocketPath)
 
 	us := lineRiver.Connect()
-
 	time.Sleep(time.Second * 2)
 	us.Cancel()
 }
 
 func TestLineListen(t *testing.T) {
 	go lineRiver.Listen()
-	for {
-		if _, err := os.Stat(lineRiver.SocketPath); err == nil {
-			break
-		}
-	}
-
+	lockUntilReady(lineRiver.SocketPath)
 	test.UnixTestClient(lineRiver.SocketPath)
 
 	consumer := lineRiver.Consume()
@@ -58,6 +51,7 @@ func TestLineListen(t *testing.T) {
 }
 
 func TestLineConsume(t *testing.T) {
+	lineRiver.Flow([]byte("Consume test\n"))
 	consumer := lineRiver.Consume()
 
 	consumer.Subscribe(func(data []byte) {
