@@ -39,18 +39,20 @@ func TestLineConnect(t *testing.T) {
 }
 
 func TestLineListen(t *testing.T) {
-	go lineRiver.Listen()
-	lockUntilReady(lineRiver.SocketPath)
+	stop := lineRiver.Listen()
+	test.LockUntilReady(lineRiver.SocketPath)
 	test.UnixTestClient(lineRiver.SocketPath)
 
 	consumer := lineRiver.Consume()
 	consumer.Subscribe(func(data []byte) {
-		lineRiver.Push(data)
+		_ = lineRiver.Push(data)
 		consumer.Cancel()
 	})
+	stop()
 }
 
 func TestLineConsume(t *testing.T) {
+	time.Sleep(time.Second * 2)
 	lineRiver.Flow([]byte("Consume test\n"))
 	consumer := lineRiver.Consume()
 

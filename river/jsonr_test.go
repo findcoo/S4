@@ -2,7 +2,6 @@ package river
 
 import (
 	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -17,15 +16,6 @@ var jsonRiver = NewJSONRiver(&Config{
 	FlushIntervalTime: time.Second * 1,
 	Supplyer:          lake.NewS3Supplyer("ap-northeast-2", "test.s4", "json"),
 })
-
-func lockUntilReady(socketpath string) {
-	for {
-		if _, err := os.Stat(socketpath); err == nil {
-			break
-		}
-		time.Sleep(time.Millisecond * 200)
-	}
-}
 
 func TestJSONFlow(t *testing.T) {
 	<-test.UnixTestServer(jsonRiver.SocketPath)

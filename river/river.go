@@ -12,7 +12,7 @@ import (
 // River meaning temporary data-stream flow to the data-lake
 type River interface {
 	Connect() *input.UnixSocket
-	Listen() *input.UnixSocket
+	Listen() func()
 	Consume() *stream.BytesStream
 	Flow(data []byte)
 	lake.Supplyer
@@ -36,14 +36,17 @@ func connect(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
 	return us
 }
 
-func listen(sockpath string, flowFunc func([]byte)) *input.UnixSocket {
+func listen(sockpath string, flowFunc func([]byte)) func() {
 	log.Print("Listenning")
-	us := input.ListenUnixSocket(sockpath)
-
-	go us.Publish().Subscribe(func(data []byte) {
-		flowFunc(data)
-	})
-	return us
+	streams, stop := input.ListenUnixSocket(sockpath)
+	go func() {
+		for us := range streams {
+			us.Publish().Subscribe(func(data []byte) {
+				flowFunc(data)
+			})
+		}
+	}()
+	return stop
 }
 
 func readyConsume(flush func(), flushtime time.Duration) (*stream.BytesStream, *time.Ticker) {

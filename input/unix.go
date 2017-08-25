@@ -5,17 +5,13 @@ import (
 	"io"
 	"log"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/findcoo/stream"
 )
 
 // UnixSocket read data from unix socket
 type UnixSocket struct {
-	listen net.Listener
-	conn   net.Conn
+	conn net.Conn
 	*stream.BytesStream
 }
 
@@ -32,43 +28,64 @@ func ConnectUnixSocket(sockPath string) *UnixSocket {
 		conn:        c,
 		BytesStream: bytesStream,
 	}
-	go us.signalHandler()
-
+	obv.Handler.AtCancel = us.shutdown
+	obv.Handler.AtComplete = us.shutdown
 	return us
 }
 
-// ListenUnixSocket listen unix socket
-func ListenUnixSocket(sockPath string) *UnixSocket {
-	sock, err := net.Listen("unix", sockPath)
-	if err != nil {
-		log.Fatal(err)
+func acceptAfter(sock net.Listener) <-chan net.Conn {
+	pipe := make(chan net.Conn, 1)
+	go func() {
+		fd, err := sock.Accept()
+		if err != nil {
+			return
+		}
+		pipe <- fd
+	}()
+	return pipe
+}
+
+// ListenUnixSocket returns a UnixSocket channel
+func ListenUnixSocket(sockPath string) (<-chan *UnixSocket, func()) {
+	streams := make(chan *UnixSocket, 1)
+	done := make(chan struct{}, 1)
+	stop := func() {
+		done <- struct{}{}
 	}
 
-	fd, err := sock.Accept()
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		sock, err := net.Listen("unix", sockPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	obv := stream.NewObserver(stream.DefaultObservHandler())
-	bytesStream := stream.NewBytesStream(obv)
-	us := &UnixSocket{
-		listen:      sock,
-		conn:        fd,
-		BytesStream: bytesStream,
-	}
-	go us.signalHandler()
-
-	return us
+	ServerLoop:
+		for {
+			select {
+			case <-done:
+				_ = sock.Close()
+				break ServerLoop
+			case fd := <-acceptAfter(sock):
+				log.Print("debug accept")
+				obv := stream.NewObserver(stream.DefaultObservHandler())
+				bytesStream := stream.NewBytesStream(obv)
+				us := &UnixSocket{
+					conn:        fd,
+					BytesStream: bytesStream,
+				}
+				obv.Handler.AtComplete = us.shutdown
+				streams <- us
+			}
+		}
+	}()
+	return streams, stop
 }
 
 func (us *UnixSocket) shutdown() {
 	_ = us.conn.Close()
-	if us.listen != nil {
-		_ = us.listen.Close()
-	}
 }
 
-// Publish start observer process and publish the stream read from unix socket
+// Publish observ and publish the stream that read from the unix socket
 func (us *UnixSocket) Publish() *UnixSocket {
 	us.Target = func() {
 		scanner := bufio.NewScanner(us.conn)
@@ -76,8 +93,9 @@ func (us *UnixSocket) Publish() *UnixSocket {
 		scanner.Split(bufio.ScanLines)
 		for scanner.Scan() {
 			select {
+			case <-stream.AfterSignal():
+				return
 			case <-us.AfterCancel():
-				us.shutdown()
 				return
 			default:
 				data := scanner.Bytes()
@@ -88,28 +106,14 @@ func (us *UnixSocket) Publish() *UnixSocket {
 
 		if err := scanner.Err(); err != nil {
 			if err == io.EOF {
-				us.shutdown()
 				us.OnComplete()
 				return
 			}
 			log.Fatal(err)
 		}
-		us.shutdown()
 		us.OnComplete()
 
 	}
 	us.Watch(nil)
-
 	return us
-}
-
-func (us *UnixSocket) signalHandler() {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	select {
-	case state := <-sig:
-		log.Printf("capture signal: %s: Close unix socket", state)
-		us.shutdown()
-	}
 }
