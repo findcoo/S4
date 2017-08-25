@@ -53,7 +53,7 @@ func (lr *LineRiver) Connect() *input.UnixSocket {
 }
 
 // Listen wrapping the listen
-func (lr *LineRiver) Listen() *input.UnixSocket {
+func (lr *LineRiver) Listen() func() {
 	return listen(lr.SocketPath, lr.Flow)
 }
 
@@ -76,7 +76,7 @@ func (lr *LineRiver) Consume() *stream.BytesStream {
 				if err != nil {
 					log.Fatal(err)
 				}
-				if len(data) > 0 {
+				if data != nil {
 					bs.Send(data)
 				}
 				if err := lr.file.Truncate(0); err != nil {

@@ -46,7 +46,7 @@ func (jb *JSONRiver) Connect() *input.UnixSocket {
 }
 
 // Listen wrapping the listen that read a byte slice from the unix client
-func (jb *JSONRiver) Listen() *input.UnixSocket {
+func (jb *JSONRiver) Listen() func() {
 	return listen(jb.SocketPath, jb.Flow)
 }
 

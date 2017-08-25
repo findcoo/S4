@@ -131,12 +131,7 @@ func s4Server(c *cli.Context) error {
 	switch rivername {
 	case "line":
 		liner := river.NewLineRiver(config)
-		liner.Listen()
-		liner.Consume().Subscribe(func(data []byte) {
-			if err := liner.Push(data); err != nil {
-				log.Print(err)
-			}
-		})
+		listen(liner)
 	case "json":
 		jsonr := river.NewJSONRiver(config)
 		listen(jsonr)

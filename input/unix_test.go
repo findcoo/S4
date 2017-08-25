@@ -3,9 +3,7 @@ package input
 import (
 	"bytes"
 	"log"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/findcoo/s4/test"
 )
@@ -30,18 +28,13 @@ func TestRead(t *testing.T) {
 
 func TestListen(t *testing.T) {
 	sockPath := "./listen.sock"
-	go func() {
-		us := ListenUnixSocket(sockPath)
-		us.Publish().Subscribe(check)
-	}()
+	streams, stop := ListenUnixSocket(sockPath)
+	test.LockUntilReady(sockPath)
+	test.UnixTestClient(sockPath)
 
-	for {
-		time.Sleep(time.Second * 1)
-		if _, err := os.Stat(sockPath); err == nil {
-			test.UnixTestClient(sockPath)
-			break
-		}
-	}
+	us := <-streams
+	us.Publish().Subscribe(check)
+	stop()
 }
 
 func BenchmarkUnix(b *testing.B) {

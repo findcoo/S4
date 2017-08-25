@@ -30,6 +30,16 @@ func echo(c net.Conn) bool {
 	return false
 }
 
+// LockUntilReady lock the process until seek the file
+func LockUntilReady(socketpath string) {
+	for {
+		if _, err := os.Stat(socketpath); err == nil {
+			break
+		}
+		time.Sleep(time.Millisecond * 200)
+	}
+}
+
 // UnixTestServer unix socket echo server for testing
 func UnixTestServer(sockpath string) <-chan struct{} {
 	ready := make(chan struct{}, 1)
