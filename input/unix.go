@@ -66,7 +66,7 @@ func ListenUnixSocket(sockPath string) (<-chan *UnixSocket, func()) {
 				_ = sock.Close()
 				break ServerLoop
 			case fd := <-acceptAfter(sock):
-				log.Print("debug accept")
+				log.Print("accept client")
 				obv := stream.NewObserver(stream.DefaultObservHandler())
 				bytesStream := stream.NewBytesStream(obv)
 				us := &UnixSocket{

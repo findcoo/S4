@@ -76,8 +76,11 @@ func (lr *LineRiver) Consume() *stream.BytesStream {
 				if err != nil {
 					log.Fatal(err)
 				}
-				if data != nil {
+
+				lenOfSended := len(data)
+				if lenOfSended > 0 {
 					bs.Send(data)
+					log.Printf("length of sended bytes to streams %d", lenOfSended)
 				}
 				if err := lr.file.Truncate(0); err != nil {
 					log.Fatal(err)

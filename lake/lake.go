@@ -78,7 +78,7 @@ func (sl *S3Supplyer) Push(data []byte) error {
 	}
 	now := time.Now()
 	key := sl.Key
-	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%s-%2d%2d.gz", key, now.Year(), int(now.Month()), now.Day(), hostname, now.Hour(), now.Minute())
+	timePartition := fmt.Sprintf("%s/year=%d/month=%d/day=%d/%s-%d:%d.txt.gz", key, now.Year(), int(now.Month()), now.Day(), hostname, now.Hour(), now.Minute())
 	obj := &s3.PutObjectInput{
 		Body:   aws.ReadSeekCloser(bytes.NewReader(compressed.Bytes())),
 		Bucket: aws.String(sl.Bucket),
